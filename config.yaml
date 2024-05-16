@@ -11,7 +11,7 @@ INTENT_TABLE: "robert_whiffin.dfe_code_assistant.code_intent_table"
 # the http path from the connection details of a SQL Warehouse. 
 SQL_WAREHOUSE_HTTP_PATH: "/sql/1.0/warehouses/d1184b8c2a8a87eb"
 # hostname of the databricks workspaces
-DATABRICKS_HOST: "adb-984752964297111.11.azuredatabricks.net"
+DATABRICKS_HOST: "adb-984752964297111.11.azuredatabricks.net/"
 # the served model to use. This needs to be a chat model (e.g. one ending in -instruct)
 SERVED_MODEL_NAME: "databricks-meta-llama-3-70b-instruct"
 # how many tokens is the model allowed to generate. 

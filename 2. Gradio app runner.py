@@ -17,6 +17,12 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+from utils.configloader import configLoader
+cl = configLoader() 
+cl.read_yaml_to_env("config.yaml")
+
+# COMMAND ----------
+
 from dbtunnel import dbtunnel
 dbtunnel.kill_port(8080)
 app='././1. gradio_app.py'

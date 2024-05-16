@@ -13,44 +13,32 @@ from utils.sqlglotfunctions import *
 w = WorkspaceClient()
 dbutils = w.dbutils
 
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
 
-# personal access token necessary for authenticating API requests. Stored using a secret
-
-DATABRICKS_TOKEN = dbutils.secrets.get(
-      scope=config["DATABRICKS_TOKEN_SECRET_SCOPE"]
-    , key=config["DATABRICKS_TOKEN_SECRET_KEY"]
-    )
+# # personal access token necessary for authenticating API requests. Stored using a secret
+DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
 
 # details on the vector store holding the similarity information
 vsc = VectorSearchClient()
-VECTOR_SEARCH_ENDPOINT_NAME = config["VECTOR_SEARCH_ENDPOINT_NAME"]
-vs_index_fullname= config["VS_INDEX_FULLNAME"]
-intent_table = config["INTENT_TABLE"]
+VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
+vs_index_fullname= os.environ["VS_INDEX_FULLNAME"]
+intent_table = os.environ["INTENT_TABLE"]
 
 # details for connecting to the llm endpoint
 
 # the URL of the serving endpoint
-MODEL_SERVING_ENDPOINT_URL: f"https://{config['DATABRICKS_HOST']}/serving-endpoints"
+MODEL_SERVING_ENDPOINT_URL = f"https://{os.environ['DATABRICKS_HOST']}serving-endpoints"
 
 client = OpenAI(
   api_key=DATABRICKS_TOKEN,
   base_url=MODEL_SERVING_ENDPOINT_URL
 )
 
-with open(".databrickscfg", "w") as f:
-    f.write("[DEFAULT]\n")
-    f.write(f"host = {config['DATABRICKS_HOST']}\n")
-    f.write(f"token = {DATABRICKS_TOKEN}\n")
-
-
 
 # create a connection to the sql warehouse
 connection = sql.connect(
-server_hostname = config["DATABRICKS_HOST"],
-http_path       = config["SQL_WAREHOUSE_HTTP_PATH"],
-access_token    = config["DATABRICKS_TOKEN"]
+server_hostname = os.environ["DATABRICKS_HOST"],
+http_path       = os.environ["SQL_WAREHOUSE_HTTP_PATH"],
+access_token    = DATABRICKS_TOKEN
 )
 cursor = connection.cursor()
 
