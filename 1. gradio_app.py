@@ -6,12 +6,7 @@ import os
 import gradio as gr
 from databricks import sql
 from databricks.vector_search.client import VectorSearchClient
-from databricks.sdk import WorkspaceClient
-
 from utils.sqlglotfunctions import *
-
-w = WorkspaceClient()
-dbutils = w.dbutils
 
 
 # # personal access token necessary for authenticating API requests. Stored using a secret
