@@ -48,5 +48,8 @@ def parse_sql(sql_query, dialect='tsql'):
 ################################################################################
 ################################################################################
 # this is called to do the T-SQL to DB-SQL translation. 
+# this will return a list for each statement that goes into it - join all the statements together 
+# before returning them as the gradio code component requires a string input
 def sqlglot_transpilation(sql_query):
-   return transpile(sql_query, read="tsql", write="spark", pretty=True)[0]
+   transpiled = transpile(sql_query, read="tsql", write="spark", pretty=True)
+   return "\n;\n".join(transpiled)
