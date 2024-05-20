@@ -95,8 +95,8 @@ def ask_llm(sql_query):
         {"role": "system", "content": system_prompt}
         ,{"role": "user",  "content": query_prompt}
         ],
-        model=config["SERVED_MODEL_NAME"],
-        max_tokens=config["MAX_TOKENS"]
+        model=os.environ["SERVED_MODEL_NAME"],
+        max_tokens=int(os.environ["MAX_TOKENS"])
     )
             
     #return [chat_completion.choices[0].message.content, query_prompt]
