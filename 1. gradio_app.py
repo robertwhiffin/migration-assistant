@@ -11,9 +11,12 @@ from utils.sqlglotfunctions import *
 
 # # personal access token necessary for authenticating API requests. Stored using a secret
 DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
-
+DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
 # details on the vector store holding the similarity information
-vsc = VectorSearchClient()
+vsc = VectorSearchClient(
+    workspace_url = "https://" + DATABRICKS_HOST
+    ,personal_access_token = DATABRICKS_TOKEN
+) # needto fix to use PAT and workspace url
 VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
 vs_index_fullname= os.environ["VS_INDEX_FULLNAME"]
 intent_table = os.environ["INTENT_TABLE"]
@@ -21,7 +24,7 @@ intent_table = os.environ["INTENT_TABLE"]
 # details for connecting to the llm endpoint
 
 # the URL of the serving endpoint
-MODEL_SERVING_ENDPOINT_URL = f"https://{os.environ['DATABRICKS_HOST']}serving-endpoints"
+MODEL_SERVING_ENDPOINT_URL = f"https://{DATABRICKS_HOST}serving-endpoints"
 
 client = OpenAI(
   api_key=DATABRICKS_TOKEN,
@@ -31,7 +34,7 @@ client = OpenAI(
 
 # create a connection to the sql warehouse
 connection = sql.connect(
-server_hostname = os.environ["DATABRICKS_HOST"],
+server_hostname = DATABRICKS_HOST,
 http_path       = os.environ["SQL_WAREHOUSE_HTTP_PATH"],
 access_token    = DATABRICKS_TOKEN
 )
@@ -47,6 +50,7 @@ def execute_sql(cursor, sql):
 # takes in a dict of {table_name: str, columns: list} where the columns are the columns used from that table
 # uses describe table to retrieve table and column descriptions from unity catalogue. 
 # wrapped in a try statement in case table not found in UC to make it work on code only
+# look to do with system tables to do in one go
 def get_table_metadata(input_dict):
 
     try:

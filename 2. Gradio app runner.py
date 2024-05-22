@@ -1,5 +1,5 @@
 # Databricks notebook source
-pip install openai sqlglot openpyxl dbtunnel[asgiproxy,gradio] databricks-vectorsearch
+pip install openai sqlglot openpyxl dbtunnel[asgiproxy,gradio] databricks-vectorsearch==0.35
 
 # COMMAND ----------
 
@@ -29,6 +29,8 @@ app='././1. gradio_app.py'
 dbtunnel.gradio(path=app).run()
 
 # COMMAND ----------
+
+# DBTITLE 1,Sample SQL query to test
 
 """
 
@@ -61,6 +63,7 @@ ORDER BY
 
 # COMMAND ----------
 
+# DBTITLE 1,Sample SQL query to test
 """
 
 SELECT
@@ -90,6 +93,7 @@ ORDER BY
 
 # COMMAND ----------
 
+# DBTITLE 1,Sample SQL query to test
 """
 with average_salarys as (
   SELECT
