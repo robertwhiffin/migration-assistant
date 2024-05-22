@@ -64,7 +64,7 @@ def get_table_metadata(input_dict):
 ################################################################################
 ################################################################################
 # this is called to actually send a request and receive response from the llm endpoint.
-def ask_llm(sql_query):
+def ask_llm(metadata_prompt, no_metadata_prompt, sql_query):
     # get tables and columns
     table_info = parse_sql(sql_query, 'tsql')
     # get table and column metadata
@@ -77,15 +77,11 @@ def ask_llm(sql_query):
         # join up the metadata into a single string to add into the prompt
         table_column_descriptions = "\n\n ".join(table_metadata)
         # set the system prompt
-        system_prompt = """
-        Your job is to explain the intent of a SQL query. You are provided with the SQL Code and a summary of the information contained within the tables queried, and details about which columns are used from which table in the query. From the information about the tables and columns, you will infer what the query is intending to do.\n 
-        """
+        system_prompt = metadata_prompt
         # build the query prompt by adding code and metadata descriptions
         query_prompt = f"This is the SQL code: {sql_query}. \n\n{table_column_descriptions}"
     else:
-        system_prompt = """
-        Your job is to explain the intent of a SQL query. You are provided with the SQL Code.
-        """
+        system_prompt = no_metadata_prompt
         # build the query prompt by adding code and metadata descriptions
         query_prompt = f"This is the SQL code: {sql_query}"
 
@@ -136,14 +132,59 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 #### This demo relies on the tables and columns referenced in the SQL query being present in Unity Catalogue and having their table comments and column comments populated. For the purpose of the demo, this was generated using the Databricks AI Generated Comments tool. 
 
 """)
+    with gr.Accordion(label="Advanced Settings", open=False):
+        with gr.Row():
+            # select SQL flavour
+            sql_flavour = gr.Dropdown(
+                label = "Input SQL Type. Select SQL if unknown."
+                ,choices = [
+                     ("SQL", 'sql')
+                    ,("Transact SQL", 'sql-msSQL')
+                    ,("MYSQL"       , 'sql-mySQL')
+                    ,("SQLITE"      , 'sql-sqlite')
+                    ,("PL/SQL"      , 'sql-plSQL')
+                    ,("HiveQL"      , 'sql-hive')
+                    ,("PostgreSQL"  , 'sql-pgSQL')
+                    ,("Spark SQL"   , 'sql-sparkSQL')
+                    ]
+                ,value="sql"
+            )
+            # this function updates the code formatting box to use the selected sql flavour
+            def update_input_code_box(language):
+                input_code = gr.Code(
+                    label="Input SQL"
+                    ,language=language
+                    )
+                return input_code
+            
+            # select whether to use table metadata
+            use_table_metadata = gr.Checkbox(
+                label="Use table metadata if available"
+                ,value=True
+            )
+        llm_sys_prompt_metadata = gr.Textbox(
+            label="System prompt for LLM to generate code intent if table metadata present."
+            ,value="""
+                Your job is to explain the intent of a SQL query. You are provided with the SQL Code and a summary of the information contained within the tables queried, and details about which columns are used from which table in the query. From the information about the tables and columns, you will infer what the query is intending to do.\n 
+                """
+            )
+        llm_sys_prompt_no_metadata = gr.Textbox(
+            label="System prompt for LLM to generate code intent if table metadata absent."
+            ,value="""
+                Your job is to explain the intent of this SQL code.
+                """
+            )
+
     # subheader
     gr.Markdown(""" ### Input your T-SQL code here for automatic translation to Spark-SQL and use AI to generate a statement of intent for the code's purpose.
                 """)
-    # input box for T-SQL code with nice formatting
-    inp = gr.Code(
-            label="Input T-SQL"
-            ,language="sql-msSQL"
+    # input box for SQL code with nice formatting
+    input_code = gr.Code(
+            label="Input SQL"
+            ,language='sql'
             )
+    # the input code box gets updated when a user changes a setting in the Advanced section
+    sql_flavour.input(update_input_code_box, sql_flavour, input_code)
     # a button labelled run
     btn = gr.Button("Run")
     # divider subheader
@@ -185,11 +226,11 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     submit = gr.Button("Save code and intent")
 
     # assign actions to buttons when clicked.
-    btn.click(fn=sqlglot_transpilation, inputs=inp, outputs=translated)
-    btn.click(fn=ask_llm, inputs=inp, outputs=explained)
+    btn.click(fn=sqlglot_transpilation, inputs=input_code, outputs=translated)
+    btn.click(fn=ask_llm, inputs=[llm_sys_prompt_metadata, llm_sys_prompt_no_metadata, input_code], outputs=explained)
     find_similar_code.click(get_similar_code, inputs=explained, outputs=[similar_code, similar_intent])
     
-    submit.click(save_intent, inputs=[inp, explained])
+    submit.click(save_intent, inputs=[input_code, explained])
 
 # this is necessary to get the app to run 
 if __name__ == "__main__":
