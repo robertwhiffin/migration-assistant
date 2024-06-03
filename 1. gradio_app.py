@@ -233,8 +233,11 @@ ORDER BY
 
 
 # for local dev
-if os.environ["LOCALE"] =="local_dev":
-    demo.queue().launch()
+try:
+    if os.environ["LOCALE"] =="local_dev":
+        demo.queue().launch()
+except KeyError:
+    pass
 
 # this is necessary to get the app to run on databricks
 if __name__ == "__main__":
