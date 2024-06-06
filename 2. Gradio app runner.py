@@ -1,13 +1,13 @@
 # Databricks notebook source
-pip install openai sqlglot openpyxl dbtunnel[asgiproxy,gradio] databricks-vectorsearch==0.35 fastapi nest_asyncio uvicorn
+#pip install openai sqlglot openpyxl dbtunnel[asgiproxy,gradio] databricks-vectorsearch==0.35 fastapi nest_asyncio uvicorn
 
 # COMMAND ----------
 
-pip install -U gradio==4.27.0 databricks-sdk databricks-sql-connector
+#pip install -U gradio==4.27.0 databricks-sdk databricks-sql-connector
 
 # COMMAND ----------
 
-dbutils.library.restartPython()
+#dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -17,7 +17,7 @@ dbutils.library.restartPython()
 # COMMAND ----------
 
 from utils.configloader import configLoader
-cl = configLoader() 
+cl = configLoader()
 cl.read_yaml_to_env("config.yaml")
 
 # COMMAND ----------

@@ -2,9 +2,15 @@ import os
 
 import gradio as gr
 
-from app.llm import ask_llm, call_llm_for_chat
+from app.llm import llm_translate, llm_chat, llm_intent
 from app.similar_code import save_intent, get_similar_code
 from utils.sqlglotfunctions import *
+import logging  # For printing translation attempts in console (debugging)
+
+# Setting up logger
+logging.basicConfig
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # # personal access token necessary for authenticating API requests. Stored using a secret
@@ -13,14 +19,6 @@ DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
 
 # needto fix to use PAT and workspace url
 
-# TODO
-'''
-- Remove table generated metadata incorporation
-- add in advanced section for intent generation seperate to translation
-- add in prompt in advanced translaton section
-- add in LLM cycle for translation with prompt interface
-
-'''
 
 
 ################################################################################
@@ -32,57 +30,54 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     # title with Databricks image
     gr.Markdown("""<img align="right" src="https://asset.brandfetch.io/idSUrLOWbH/idm22kWNaH.png" alt="logo" width="120">
 
-## A context aware migration assistant for explaining the intent of SQL code and conversion to Spark SQL
+## A migration assistant for explaining the intent of SQL code and conversion to Spark SQL
 
 #### This demo relies on the tables and columns referenced in the SQL query being present in Unity Catalogue and having their table comments and column comments populated. For the purpose of the demo, this was generated using the Databricks AI Generated Comments tool. 
 
 """)
     
 ################################################################################
-#### ADVANCED OPTIONS PANE
+#### TRANSLATION ADVANCED OPTIONS PANE
 ################################################################################
-    with gr.Accordion(label="Advanced Settings", open=False):
+    with gr.Accordion(label="Translation Advanced Settings", open=False):
         with gr.Row():
-            # select SQL flavour
-            sql_flavour = gr.Dropdown(
-                label = "Input SQL Type. Select SQL if unknown."
-                ,choices = [
-                     ("SQL", 'sql')
-                    ,("Transact SQL", 'sql-msSQL')
-                    ,("MYSQL"       , 'sql-mySQL')
-                    ,("SQLITE"      , 'sql-sqlite')
-                    ,("PL/SQL"      , 'sql-plSQL')
-                    ,("HiveQL"      , 'sql-hive')
-                    ,("PostgreSQL"  , 'sql-pgSQL')
-                    ,("Spark SQL"   , 'sql-sparkSQL')
-                    ]
-                ,value="sql"
+            transation_system_prompt = gr.Textbox(
+                label="Instructions for the LLM translation tool."
+                ,value="""
+                          You are an expert in multiple SQL dialects. You only reply with SQL code and with no other text. 
+                          Your purpose is to translate the given SQL query to Databricks Spark SQL. 
+                          You must follow these rules:
+                          - You must keep all original catalog, schema, table, and field names.
+                          - Convert all dates to dd-MMM-yyyy format using the date_format() function.
+                          - Subqueries must end with a semicolon.
+                          - Ensure queries do not have # or @ symbols.
+                          - ONLY if the original query uses temporary tables (e.g. "INTO #temptable"), re-write these as either CREATE OR REPLACE TEMPORARY VIEW or CTEs. .
+                          - Square brackets must be replaced with backticks.
+                          - Custom field names should be surrounded by backticks. 
+                          - Ensure queries do not have # or @ symbols.
+                          - Only if the original query contains DECLARE and SET statements, re-write them according to the following format:
+                                DECLARE VARIABLE variable TYPE DEFAULT value; For example: DECLARE VARIABLE number INT DEFAULT 9;
+                                SET VAR variable = value; For example: SET VAR number = 9;
+                          
+                        Write an initial draft of the translated query. Then double check the output for common mistakes, including:
+                        - Using NOT IN with NULL values
+                        - Using UNION when UNION ALL should have been used
+                        - Using BETWEEN for exclusive ranges
+                        - Data type mismatch in predicates
+                        - Properly quoting identifiers
+                        - Using the correct number of arguments for functions
+                        - Casting to the correct data type
+                        - Using the proper columns for joins
+                        
+                        Use format:
+                        
+                        First draft: <<FIRST_DRAFT_QUERY>>
+                        Final answer: <<FINAL_ANSWER_QUERY>>
+                        """
+                .strip()
+                ,lines=40
             )
-            # this function updates the code formatting box to use the selected sql flavour
-            def update_input_code_box(language):
-                input_code = gr.Code(
-                    label="Input SQL"
-                    ,language=language
-                    )
-                return input_code
-            
-            # select whether to use table metadata
-            use_table_metadata = gr.Checkbox(
-                label="Use table metadata if available"
-                ,value=True
-            )
-        llm_sys_prompt_metadata = gr.Textbox(
-            label="System prompt for LLM to generate code intent if table metadata present."
-            ,value="""
-                Your job is to explain the intent of a SQL query. You are provided with the SQL Code and a summary of the information contained within the tables queried, and details about which columns are used from which table in the query. From the information about the tables and columns, you will infer what the query is intending to do.
-                """.strip()
-            )
-        llm_sys_prompt_no_metadata = gr.Textbox(
-            label="System prompt for LLM to generate code intent if table metadata absent."
-            ,value="""
-                Your job is to explain the intent of this SQL code.
-                """.strip()
-            )
+
 ################################################################################
 #### TRANSLATION PANE
 ################################################################################
@@ -90,11 +85,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Accordion(label="Translation Pane", open=True):
         gr.Markdown(""" ### Input your T-SQL code here for automatic translation to Spark-SQL and use AI to generate a statement of intent for the code's purpose."""
                     )
-
-        # a button labelled translate
-        translate_button = gr.Button("Translate") 
+        # hidden chat interface
+        translation_chat = gr.Chatbot(visible=False)
         with gr.Row():
-
             with gr.Column():
                 gr.Markdown(
                     """ ### Input your T-SQL code here for translation to Spark-SQL."""
@@ -128,9 +121,9 @@ GROUP BY
 ORDER BY
   c.[country_name]"""
                         )
-            # the input code box gets updated when a user changes a setting in the Advanced section
-                sql_flavour.input(update_input_code_box, sql_flavour, input_code)
-            
+                # a button labelled translate
+                translate_button = gr.Button("Translate")
+
             with gr.Column():
                 # divider subheader
                 gr.Markdown(""" ### Your Code Translated to Spark-SQL""")
@@ -139,13 +132,59 @@ ORDER BY
                     label="Your code translated to Spark SQL"
                     ,language="sql-sparkSQL"
                     )
-        translate_button.click(fn=sqlglot_transpilation, inputs=input_code, outputs=translated)
+                translation_prompt = gr.Textbox(
+                    label = "Adjustments for translation"
+                )
+
+        def translate_respond(system_prompt, message, chat_history):
+            bot_message = llm_chat(system_prompt, message, chat_history)
+            chat_history.append([message, bot_message])
+            return chat_history, chat_history[-1][1]
+
+
+        # helper function to take the output from llm_translate and return outputs for chatbox and textbox
+        # chatbox input is a list of lists, each list is a message from the user and the response from the LLM
+        # textbox input is a string
+        def llm_translate_wrapper(system_prompt, input_code):
+            # call the LLM to translate the code
+            translated_code = llm_translate(system_prompt, input_code)
+            # wrap the translated code in a list of lists for the chatbot
+            chat_history = [[input_code, translated_code]]
+            return chat_history, translated_code
+
+        # reset hidden chat history and prompt
+        translate_button.click(
+            fn=lambda: ([['', '']], '')
+            ,inputs=None
+            ,outputs=[translation_chat, translation_prompt]
+        )
+        # do translation
+        translate_button.click(
+              fn=llm_translate_wrapper
+            , inputs=[transation_system_prompt, input_code]
+            , outputs=[translation_chat, translated]
+        )
+        # refine translation
+        translation_prompt.submit(
+            fn=translate_respond
+            , inputs=[transation_system_prompt, translation_prompt, translation_chat]
+            , outputs=[translation_chat, translated]
+
+        )
 
 ################################################################################
 #### AI GENERATED INTENT PANE
 ################################################################################
     # divider subheader
-
+    with gr.Accordion(label="Advanced Intent Settings", open=False):
+        gr.Markdown(""" ### Advanced settings for the generating the intent of the input code.""")
+        with gr.Row():
+            intent_system_prompt = gr.Textbox(
+                label="System prompt of the LLM to generate the intent. Editing will reset the intent."
+                , value="""Your job is to explain intent of the provided SQL code.
+                        """
+                .strip()
+            )
     with gr.Accordion(label="Intent Pane", open=True):
         gr.Markdown(""" ## AI generated intent of what your code aims to do. 
                     
@@ -165,37 +204,36 @@ ORDER BY
         msg = gr.Textbox(label="Instruction")
         clear = gr.ClearButton([msg, chatbot])
 
-        def user(user_message, history):
-            return "", history + [[user_message, None]]
 
-        def respond(chat_history, message, metadata_prompt, no_metadata_prompt, sql_query ):                
-            bot_message = call_llm_for_chat(chat_history, message, metadata_prompt, no_metadata_prompt, sql_query)
+        def intent_respond(system_prompt, message, chat_history):
+            bot_message = llm_chat(system_prompt, message, chat_history)
             chat_history.append([message, bot_message])
-            return "", chat_history
-        
+            return chat_history, '', bot_message
+
+        def llm_chat_wrapper(system_prompt, input_code):
+            # call the LLM to translate the code
+            intent = llm_intent(system_prompt, input_code)
+            # wrap the translated code in a list of lists for the chatbot
+            chat_history = [[input_code, intent]]
+            return chat_history, '', intent
+
         explain_button.click(
-            fn=ask_llm
+            fn=llm_chat_wrapper
             , inputs=[
-                llm_sys_prompt_metadata
-                , llm_sys_prompt_no_metadata
+                intent_system_prompt
                 , input_code
                 ]
-            , outputs=[msg, chatbot]
+            , outputs=[chatbot, msg, explained]
             )
-        # msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False).then(
-        #     respond, chatbot, chatbot
-        # )
         msg.submit(
-            fn=respond
+            fn=intent_respond
             ,inputs = [
-                chatbot
+                intent_system_prompt
                 , msg
-                , llm_sys_prompt_metadata
-                , llm_sys_prompt_no_metadata
-                , input_code
+                , chatbot
                 ],
-            outputs= [msg, chatbot])
-        clear.click(lambda: None, None, chatbot, queue=False)
+            outputs= [chatbot, msg, explained])
+        clear.click(lambda : None, None, chatbot, queue=False)
 
 
 
@@ -228,8 +266,16 @@ ORDER BY
         fn=get_similar_code
         , inputs=chatbot
         , outputs=[similar_code, similar_intent])
-    
-    submit.click(save_intent, inputs=[input_code, explained])
+
+    def save_intent_wrapper(input_code, explained):
+        gr.Info("Saving intent")
+        save_intent(input_code, explained)
+        gr.Info("Intent saved")
+
+    submit.click(
+        save_intent_wrapper
+        , inputs=[input_code, explained]
+    )
 
 
 # for local dev
