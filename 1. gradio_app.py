@@ -2,7 +2,7 @@ import os
 
 import gradio as gr
 
-from app.llm import llm_translate, llm_chat, llm_intent
+from app.llm import LLMCalls
 from app.similar_code import save_intent, get_similar_code
 from utils.sqlglotfunctions import *
 import logging  # For printing translation attempts in console (debugging)
@@ -82,10 +82,16 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 #### TRANSLATION PANE
 ################################################################################
     # subheader
+    DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
+    DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
+    MODEL_NAME = os.environ["SERVED_MODEL_NAME"]
+    MAX_TOKENS = os.environ["MAX_TOKENS"]
+
+    translation_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN,MODEL_NAME,MAX_TOKENS)
     with gr.Accordion(label="Translation Pane", open=True):
         gr.Markdown(""" ### Input your T-SQL code here for automatic translation to Spark-SQL and use AI to generate a statement of intent for the code's purpose."""
                     )
-        # hidden chat interface
+        # hidden chat interface - to enable chatbot functionality
         translation_chat = gr.Chatbot(visible=False)
         with gr.Row():
             with gr.Column():
@@ -137,7 +143,7 @@ ORDER BY
                 )
 
         def translate_respond(system_prompt, message, chat_history):
-            bot_message = llm_chat(system_prompt, message, chat_history)
+            bot_message = translation_llm.llm_chat(system_prompt, message, chat_history)
             chat_history.append([message, bot_message])
             return chat_history, chat_history[-1][1]
 
@@ -147,7 +153,7 @@ ORDER BY
         # textbox input is a string
         def llm_translate_wrapper(system_prompt, input_code):
             # call the LLM to translate the code
-            translated_code = llm_translate(system_prompt, input_code)
+            translated_code = translation_llm.llm_translate(system_prompt, input_code)
             # wrap the translated code in a list of lists for the chatbot
             chat_history = [[input_code, translated_code]]
             return chat_history, translated_code
@@ -175,6 +181,7 @@ ORDER BY
 ################################################################################
 #### AI GENERATED INTENT PANE
 ################################################################################
+    intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
     # divider subheader
     with gr.Accordion(label="Advanced Intent Settings", open=False):
         gr.Markdown(""" ### Advanced settings for the generating the intent of the input code.""")
@@ -206,13 +213,13 @@ ORDER BY
 
 
         def intent_respond(system_prompt, message, chat_history):
-            bot_message = llm_chat(system_prompt, message, chat_history)
+            bot_message = intent_llm.llm_chat(system_prompt, message, chat_history)
             chat_history.append([message, bot_message])
             return chat_history, '', bot_message
 
         def llm_chat_wrapper(system_prompt, input_code):
             # call the LLM to translate the code
-            intent = llm_intent(system_prompt, input_code)
+            intent = intent_llm.llm_intent(system_prompt, input_code)
             # wrap the translated code in a list of lists for the chatbot
             chat_history = [[input_code, intent]]
             return chat_history, '', intent
