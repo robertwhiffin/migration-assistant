@@ -4,7 +4,7 @@ import gradio as gr
 
 from app.llm import LLMCalls
 from app.similar_code import SimilarCode
-from app.table_metadata import SQLInterface
+from app.sql_interface import SQLInterface
 import logging  # For printing translation attempts in console (debugging)
 
 # Setting up logger
