@@ -2,38 +2,32 @@ import os
 
 from databricks.vector_search.client import VectorSearchClient
 
-from app.table_metadata import cursor
-# details on the vector store holding the similarity information
-DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
-DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
+class SimilarCode():
 
-vsc = VectorSearchClient(
-    workspace_url = "https://" + DATABRICKS_HOST
-    ,personal_access_token = DATABRICKS_TOKEN
-)
-VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
-vs_index_fullname= os.environ["VS_INDEX_FULLNAME"]
-intent_table = os.environ["INTENT_TABLE"]
+    def __init__(self, databricks_token, databricks_host, vector_search_endpoint_name, vs_index_fullname, intent_table):
+        self.vsc = VectorSearchClient(
+                workspace_url = "https://" + databricks_host
+                ,personal_access_token = databricks_token
+            )
+        self.vector_search_endpoint_name = vector_search_endpoint_name
+        self.vs_index_fullname = vs_index_fullname
+        self.intent_table = intent_table
 
-################################################################################
-################################################################################
-# this writes the code & intent into the lookup table
-def save_intent(code, intent):
-    code_hash = hash(code)
 
-    cursor.execute(
-        f"INSERT INTO {intent_table} VALUES ({code_hash}, \"{code}\", \"{intent}\")"
-    )
+    def save_intent(self, code, intent, cursor):
+        code_hash = hash(code)
 
-################################################################################
-################################################################################
-# this does a look up on the vector store to find the most similar code based on the intent
-def get_similar_code(chat_history):
-    intent=chat_history[-1][1]
-    results = vsc.get_index(VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname).similarity_search(
-    query_text=intent,
-    columns=["code", "intent"],
-    num_results=1)
-    docs = results.get('result', {}).get('data_array', [])
-    return(docs[0][0], docs[0][1])
+        cursor.execute(
+            f"INSERT INTO {self.intent_table} VALUES ({code_hash}, \"{code}\", \"{intent}\")"
+        )
+
+    def get_similar_code(self, chat_history):
+        intent=chat_history[-1][1]
+        results = self.vsc.get_index(self.vector_search_endpoint_name, self.vs_index_fullname).similarity_search(
+        query_text=intent,
+        columns=["code", "intent"],
+        num_results=1)
+        docs = results.get('result', {}).get('data_array', [])
+        return(docs[0][0], docs[0][1])
+
 

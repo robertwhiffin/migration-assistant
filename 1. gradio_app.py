@@ -3,8 +3,8 @@ import os
 import gradio as gr
 
 from app.llm import LLMCalls
-from app.similar_code import save_intent, get_similar_code
-from utils.sqlglotfunctions import *
+from app.similar_code import SimilarCode
+from app.table_metadata import SQLInterface
 import logging  # For printing translation attempts in console (debugging)
 
 # Setting up logger
@@ -16,10 +16,25 @@ logger.setLevel(logging.DEBUG)
 # # personal access token necessary for authenticating API requests. Stored using a secret
 DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
 DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
+MODEL_NAME = os.environ["SERVED_MODEL_NAME"]
+MAX_TOKENS = os.environ["MAX_TOKENS"]
+SQL_WAREHOUSE_HTTP_PATH = os.environ["SQL_WAREHOUSE_HTTP_PATH"]
+VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
+VS_INDEX_FULLNAME = os.environ["VS_INDEX_FULLNAME"]
+INTENT_TABLE = os.environ["INTENT_TABLE"]
 
-# needto fix to use PAT and workspace url
 
 
+sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
+translation_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN,MODEL_NAME,MAX_TOKENS)
+intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
+similar_code_helper = SimilarCode(
+      DATABRICKS_TOKEN
+    , DATABRICKS_HOST
+    , VECTOR_SEARCH_ENDPOINT_NAME
+    , VS_INDEX_FULLNAME
+    , INTENT_TABLE
+)
 
 ################################################################################
 ################################################################################
@@ -82,12 +97,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 #### TRANSLATION PANE
 ################################################################################
     # subheader
-    DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
-    DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
-    MODEL_NAME = os.environ["SERVED_MODEL_NAME"]
-    MAX_TOKENS = os.environ["MAX_TOKENS"]
 
-    translation_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN,MODEL_NAME,MAX_TOKENS)
+
+
     with gr.Accordion(label="Translation Pane", open=True):
         gr.Markdown(""" ### Input your T-SQL code here for automatic translation to Spark-SQL and use AI to generate a statement of intent for the code's purpose."""
                     )
@@ -181,7 +193,6 @@ ORDER BY
 ################################################################################
 #### AI GENERATED INTENT PANE
 ################################################################################
-    intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
     # divider subheader
     with gr.Accordion(label="Advanced Intent Settings", open=False):
         gr.Markdown(""" ### Advanced settings for the generating the intent of the input code.""")
@@ -270,13 +281,13 @@ ORDER BY
 
         # assign actions to buttons when clicked.
     find_similar_code.click(
-        fn=get_similar_code
+        fn= similar_code_helper.get_similar_code
         , inputs=chatbot
         , outputs=[similar_code, similar_intent])
 
     def save_intent_wrapper(input_code, explained):
         gr.Info("Saving intent")
-        save_intent(input_code, explained)
+        similar_code_helper.save_intent(input_code, explained, sql_interface.cursor)
         gr.Info("Intent saved")
 
     submit.click(
