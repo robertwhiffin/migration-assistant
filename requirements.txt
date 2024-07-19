@@ -6,3 +6,7 @@ dbtunnel[asgiproxy, gradio]
 gradio==4.27.0
 pyyaml
 databricks-vectorsearch
+scipy
+langchain
+langchain-community
+mlflow[databricks]
