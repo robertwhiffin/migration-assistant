@@ -113,6 +113,10 @@ input_example = {
                 "content": '''You are an AI assistant answer the questions''',
             },
             {
+                "role": "ai",
+                "content": 'codejam',
+            },
+            {
                 "role": "user",
                 "content": "what is the weatherl like in UK?",
             },
