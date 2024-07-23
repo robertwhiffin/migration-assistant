@@ -2,7 +2,7 @@ from databricks.sdk import WorkspaceClient
 import yaml
 import os
 
-class configLoader:
+class Configloader:
     """
     This is used to make it easy to transfer variables between a notebook and a workspace file using
     environment variables.

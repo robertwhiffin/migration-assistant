@@ -16,12 +16,12 @@ logger.setLevel(logging.DEBUG)
 # # personal access token necessary for authenticating API requests. Stored using a secret
 DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
 DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
-MODEL_NAME = os.environ["SERVED_MODEL_NAME"]
+MODEL_NAME = os.environ["SERVED_FOUNDATION_MODEL_NAME"]
 MAX_TOKENS = os.environ["MAX_TOKENS"]
 SQL_WAREHOUSE_HTTP_PATH = os.environ["SQL_WAREHOUSE_HTTP_PATH"]
 VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
 VS_INDEX_FULLNAME = os.environ["VS_INDEX_FULLNAME"]
-INTENT_TABLE = os.environ["INTENT_TABLE"]
+INTENT_TABLE = os.environ["VS_INTENT_TABLE"]
 
 
 
