@@ -1,4 +1,3 @@
-from utils.configloader import Configloader
 from infra.unity_catalog_infra import setup_UC_infra
 from app.sql_interface import SQLInterface
 
@@ -6,20 +5,17 @@ import os
 from databricks.vector_search.client import VectorSearchClient
 
 def setup_VS_infra():
-    #load config file into environment variables
-    cl = Configloader()
-    cl.read_yaml_to_env("config.yaml")
 
     # get environment variables
-    DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]
-    DATABRICKS_HOST = os.environ["DATABRICKS_HOST"]
-    SQL_WAREHOUSE_HTTP_PATH = os.environ["SQL_WAREHOUSE_HTTP_PATH"]
-    UC_CATALOG = os.environ["CATALOG"]
-    UC_SCHEMA = os.environ["SCHEMA"]
-    VECTOR_SEARCH_ENDPOINT_NAME = os.environ["VECTOR_SEARCH_ENDPOINT_NAME"]
-    VS_INDEX_FULLNAME = os.environ["VS_INDEX_FULLNAME"]
-    VS_INTENT_TABLE = os.environ["VS_INTENT_TABLE"]
-    EMBEDDING_MODEL_ENDPOINT = os.environ["EMBEDDING_MODEL_ENDPOINT"]
+    DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
+    DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
+    SQL_WAREHOUSE_HTTP_PATH = os.environ.get("SQL_WAREHOUSE_HTTP_PATH")
+    UC_CATALOG = os.environ.get("CATALOG")
+    UC_SCHEMA = os.environ.get("SCHEMA")
+    VECTOR_SEARCH_ENDPOINT_NAME = os.environ.get("VECTOR_SEARCH_ENDPOINT_NAME")
+    VS_INDEX_FULLNAME = os.environ.get("VS_INDEX_FULLNAME")
+    VS_INTENT_TABLE = os.environ.get("VS_INTENT_TABLE")
+    EMBEDDING_MODEL_ENDPOINT = os.environ.get("EMBEDDING_MODEL_ENDPOINT")
     sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
 
     # do UC setup if not done

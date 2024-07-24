@@ -84,8 +84,8 @@ print(chain.invoke({"question": "What is Spark?"}))
 
 from openai import OpenAI
 import os
-from utils.configloader import Configloader
-cl = Configloader()
+from utils.configloader import ConfigLoader
+cl = ConfigLoader()
 cl.read_yaml_to_env("config.yaml")
 # # personal access token necessary for authenticating API requests. Stored using a secret
 DATABRICKS_TOKEN = os.environ["DATABRICKS_TOKEN"]

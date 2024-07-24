@@ -16,8 +16,8 @@
 
 # COMMAND ----------
 
-from utils.configloader import Configloader
-cl = Configloader()
+from utils.configloader import ConfigLoader
+cl = ConfigLoader()
 cl.read_yaml_to_env("config.yaml")
 
 # COMMAND ----------

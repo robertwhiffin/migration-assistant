@@ -2,7 +2,7 @@ from databricks.sdk import WorkspaceClient
 import yaml
 import os
 
-class Configloader:
+class ConfigLoader:
     """
     This is used to make it easy to transfer variables between a notebook and a workspace file using
     environment variables.
@@ -23,8 +23,8 @@ class Configloader:
         dbutils = w.dbutils
 
         DATABRICKS_TOKEN = dbutils.secrets.get(
-            scope=os.environ["DATABRICKS_TOKEN_SECRET_SCOPE"]
-            , key=os.environ["DATABRICKS_TOKEN_SECRET_KEY"]
+            scope=os.environ.get("DATABRICKS_TOKEN_SECRET_SCOPE")
+            , key=os.environ.get("DATABRICKS_TOKEN_SECRET_KEY")
             )
 
         os.environ['DATABRICKS_TOKEN'] = DATABRICKS_TOKEN

@@ -95,7 +95,7 @@ def create_langchain_chat_model():
     mlflow.models.set_model(model=chain)
 
     # Log the model to MLflow
-    experiment_name = os.environ["MLFLOW_EXPERIMENT_NAME"]
+    experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME")
     try:
         mlflow.create_experiment(experiment_name)
         mlflow.set_experiment(experiment_name)
@@ -124,9 +124,9 @@ def create_langchain_chat_model():
 
     client = MlflowClient()
 
-    catalog = os.environ["CATALOG"]
-    schema = os.environ["SCHEMA"]
-    UC_MODEL_NAME = os.environ["MLFLOW_MODEL_NAME"]
+    catalog = os.environ.get("CATALOG")
+    schema = os.environ.get("SCHEMA")
+    UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
 
     serving_endpoint_name ="project-gamma-endpoint"
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
@@ -148,8 +148,8 @@ def create_langchain_chat_model():
         "table_name_prefix": serving_endpoint_name
         }
     environment_vars={
-        "DATABRICKS_TOKEN": os.environ["DATABRICKS_TOKEN"]
-        ,"DATABRICKS_HOST": os.environ["DATABRICKS_HOST"]
+        "DATABRICKS_TOKEN": os.environ.get("DATABRICKS_TOKEN")
+        ,"DATABRICKS_HOST": os.environ.get("DATABRICKS_HOST")
         ,"ENABLE_MLFLOW_TRACING": "true"
     }
     serving_client.create_endpoint_if_not_exists(
