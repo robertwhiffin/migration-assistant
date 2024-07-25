@@ -1,4 +1,5 @@
-from openai import OpenAI
+#from openai import OpenAI
+import os
 from langchain_community.chat_models import ChatDatabricks
 class LLMCalls():
     def __init__(self, databricks_host, databricks_token, model_name, max_tokens):
@@ -9,7 +10,7 @@ class LLMCalls():
         # )
         # self.model_name = model_name
         # self.max_tokens = int(max_tokens)
-        self.model = ChatDatabricks(endpoint="rob-test-endpoint2")
+        self.model = ChatDatabricks(endpoint=os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME"))
 
 
     def call_llm(self, messages):

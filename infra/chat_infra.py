@@ -141,7 +141,7 @@ def setup_chat_infra():
     catalog = os.environ.get("CATALOG")
     schema = os.environ.get("SCHEMA")
     UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
-    serving_endpoint_name ="project-gamma-endpoint"
+    serving_endpoint_name = os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME")
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
     DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
     DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")

@@ -37,3 +37,4 @@ MAX_TOKENS: 4096
 MLFLOW_EXPERIMENT_NAME: "/Users/robert.whiffin@databricks.com/databricks-project-gamma"
 # mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
 MLFLOW_MODEL_NAME: "gamma-chain"
+LANGCHAIN_SERVING_ENDPOINT_NAME: "project-gamma-endpoint"
