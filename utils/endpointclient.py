@@ -5,8 +5,8 @@ import os
 
 class EndpointApiClient:
     def __init__(self):
-        self.base_url = os.environ["DATABRICKS_HOST"]
-        self.token = os.environ["DATABRICKS_TOKEN"]
+        self.base_url = os.environ.get("DATABRICKS_HOST")
+        self.token = os.environ.get("DATABRICKS_TOKEN")
         self.headers = {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
 
     def create_inference_endpoint(self, endpoint_name, served_models, auto_capture_config=None):

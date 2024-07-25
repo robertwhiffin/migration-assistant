@@ -1,7 +1,6 @@
 openai
 databricks-sdk
 databricks-sql-connector
-sqlglot
 dbtunnel[asgiproxy, gradio]
 gradio==4.27.0
 pyyaml

@@ -29,3 +29,8 @@ class ConfigLoader:
 
         os.environ['DATABRICKS_TOKEN'] = DATABRICKS_TOKEN
 
+        # remove trailing slash from databricks host if present
+        DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
+        if DATABRICKS_HOST[-1] == '/':
+            DATABRICKS_HOST = DATABRICKS_HOST[:-1]
+            os.environ['DATABRICKS_HOST'] = DATABRICKS_HOST

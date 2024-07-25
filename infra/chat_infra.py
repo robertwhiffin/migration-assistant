@@ -20,6 +20,20 @@ def create_langchain_chat_model():
     mlflow.login()
     mlflow.langchain.autolog()
     ############
+
+    FOUNDATION_MODEL = os.environ.get("SERVED_FOUNDATION_MODEL_NAME")
+    experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME")
+    catalog = os.environ.get("CATALOG")
+    schema = os.environ.get("SCHEMA")
+    UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
+    fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
+
+    # check if the model already exists and if so, return
+    client = MlflowClient()
+    model_version_infos = client.search_model_versions("name = '%s'" % fully_qualified_name)
+    if len(model_version_infos) > 0:
+        return
+
     # Helper functions
     ############
     # Return the string contents of the most recent message from the user
@@ -75,7 +89,7 @@ def create_langchain_chat_model():
     ############
     # FM for generation
     ############
-    model = ChatDatabricks(endpoint=os.environ["SERVED_FOUNDATION_MODEL_NAME"])
+    model = ChatDatabricks(endpoint=FOUNDATION_MODEL)
 
     ############
     # RAG Chain
@@ -95,7 +109,6 @@ def create_langchain_chat_model():
     mlflow.models.set_model(model=chain)
 
     # Log the model to MLflow
-    experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME")
     try:
         mlflow.create_experiment(experiment_name)
         mlflow.set_experiment(experiment_name)
@@ -120,17 +133,24 @@ def create_langchain_chat_model():
 
     mlflow.set_registry_uri('databricks-uc')
 
-    chain = mlflow.langchain.load_model(logged_chain_info.model_uri)
+    # Register the model
+    uc_registered_model_info = mlflow.register_model(model_uri=logged_chain_info.model_uri, name=fully_qualified_name)
 
-    client = MlflowClient()
+def setup_chat_infra():
 
     catalog = os.environ.get("CATALOG")
     schema = os.environ.get("SCHEMA")
     UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
-
     serving_endpoint_name ="project-gamma-endpoint"
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
-    uc_registered_model_info = mlflow.register_model(model_uri=logged_chain_info.model_uri, name=fully_qualified_name)
+    DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
+    DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
+
+    # Create the model if it doesn't exist
+    create_langchain_chat_model()
+
+    # Get the latest model version
+    client = MlflowClient()
     def get_latest_model_version(model_name):
       client = MlflowClient()
       model_version_infos = client.search_model_versions("name = '%s'" % model_name)
@@ -148,8 +168,8 @@ def create_langchain_chat_model():
         "table_name_prefix": serving_endpoint_name
         }
     environment_vars={
-        "DATABRICKS_TOKEN": os.environ.get("DATABRICKS_TOKEN")
-        ,"DATABRICKS_HOST": os.environ.get("DATABRICKS_HOST")
+        "DATABRICKS_TOKEN": DATABRICKS_TOKEN
+        ,"DATABRICKS_HOST": DATABRICKS_HOST
         ,"ENABLE_MLFLOW_TRACING": "true"
     }
     serving_client.create_endpoint_if_not_exists(

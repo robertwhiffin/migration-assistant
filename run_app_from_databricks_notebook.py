@@ -1,9 +1,5 @@
 # Databricks notebook source
-#pip install openai sqlglot openpyxl dbtunnel[asgiproxy,gradio] databricks-vectorsearch==0.35 fastapi nest_asyncio uvicorn
-
-# COMMAND ----------
-
-#pip install -U gradio==4.27.0 databricks-sdk databricks-sql-connector
+#pip install -r "requirements.txt"
 
 # COMMAND ----------
 
@@ -24,5 +20,5 @@ cl.read_yaml_to_env("config.yaml")
 
 from dbtunnel import dbtunnel
 dbtunnel.kill_port(8080)
-app='././1. gradio_app.py'
+app='././gradio_app.py'
 dbtunnel.gradio(path=app).run()
