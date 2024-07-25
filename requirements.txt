@@ -8,3 +8,4 @@ scipy
 langchain
 langchain-community
 mlflow[databricks]
+typer>=0.3.0
