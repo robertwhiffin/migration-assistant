@@ -38,9 +38,10 @@ def setup_VS_infra():
         # if endpoint doesn't exist, create it
         if '"error_code":"NOT_FOUND"' in str(e):
             try:
-                client.create_endpoint(
+                client.create_endpoint_and_wait(
                     name=VECTOR_SEARCH_ENDPOINT_NAME
                     ,endpoint_type="STANDARD"
+                    ,verbose=True
                 )
             # if get a different error, raise it
             except Exception as e:
