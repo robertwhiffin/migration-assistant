@@ -1,7 +1,6 @@
 openai
 databricks-sdk
 databricks-sql-connector
-dbtunnel[asgiproxy, gradio]==0.14.6
 gradio==4.27.0
 pyyaml
 databricks-vectorsearch
