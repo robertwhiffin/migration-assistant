@@ -11,4 +11,4 @@ if not w.secrets.get_scope(scope):
     w.secrets.create_scope(scope)
 
 
-w.secrets.put_secret(scope=scope, key=key, string_value=pat)
+w.secrets.put_secret(scope=scope, key=key, string_value="pat")

@@ -7,12 +7,13 @@ import os
 from utils.endpointclient import EndpointApiClient
 
 from langchain_community.chat_models import ChatDatabricks
-from langchain_core.runnables import RunnableLambda
+from langchain_core.runnables import RunnableLambda,RunnableBranch,RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
 )
+from langchain.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
 
 def create_langchain_chat_model():
@@ -67,6 +68,32 @@ def create_langchain_chat_model():
             ("user", "{question}"),
         ]
     )
+    is_question_about_sql_str = """
+        You are classifying Questions to know if this question is related to Databricks and SQL in general
+
+        Question: Convert to Spark SQL SELECT * from table 1?
+        Expected Response: Yes
+
+        Question: Knowing this followup history: Convert to Spark SQL SELECT * from table 1?, classify this question: Write me a song.
+        Expected Response: No
+
+        Only answer with "yes" or "no". 
+
+        Knowing this followup history:"""
+
+    is_question_relevant_prompt = ChatPromptTemplate.from_messages(
+        [
+            (  # System prompt contains the instructions
+                "system",
+                is_question_about_sql_str,
+            ),
+            # If there is history, provide it.
+            # Note: This chain does not compress the history, so very long converastions can overflow the context window.
+            MessagesPlaceholder(variable_name="formatted_chat_history"),
+            # User's most current question
+            ("user", "classify this question: {question}"),
+        ]
+    )
 
 
     # Format the converastion history to fit into the prompt template above.
@@ -91,22 +118,61 @@ def create_langchain_chat_model():
     ############
     model = ChatDatabricks(endpoint=FOUNDATION_MODEL)
 
+
+    ############
+    # Guard Rail chain
+    ############
+
+
+
     ############
     # RAG Chain
     ############
-    chain = (
+    is_question_about_sql_chain = (
         {
-            "system": itemgetter("messages") | RunnableLambda(extract_system_prompt_string),
             "question": itemgetter("messages") | RunnableLambda(extract_user_query_string),
-            "formatted_chat_history": itemgetter("messages") | RunnableLambda(format_chat_history_for_prompt),
+            "formatted_chat_history": itemgetter("messages") | RunnableLambda(extract_chat_history),
+        }
+        | is_question_relevant_prompt
+        | model
+        | StrOutputParser())
+
+    irrelevant_question_chain = (
+        RunnableLambda(lambda x: {"result": 'I cannot answer questions that are not about Databricks or Spark SQL'}))
+
+
+
+
+    chain = (
+        RunnablePassthrough() |
+        {
+            "system": itemgetter("system") ,
+            "question": itemgetter("question") ,
+            "formatted_chat_history": itemgetter("chat_history") 
         }
         | prompt
         | model
         | StrOutputParser()
     )
 
+    branch_node = RunnableBranch(
+        (lambda x: "yes" in x["question_is_relevant"].lower(), RunnablePassthrough() |chain),
+        (lambda x: "no" in x["question_is_relevant"].lower(), irrelevant_question_chain),
+        irrelevant_question_chain)
 
-    mlflow.models.set_model(model=chain)
+    full_chain = (
+    {
+        "question_is_relevant": is_question_about_sql_chain,
+        "question": itemgetter("messages") | RunnableLambda(extract_user_query_string),
+        "system": itemgetter("messages") | RunnableLambda(extract_system_prompt_string),
+        "chat_history": itemgetter("messages") | RunnableLambda(format_chat_history_for_prompt),    
+    }
+    | branch_node
+    )
+
+
+
+    mlflow.models.set_model(model=full_chain)
 
     # Log the model to MLflow
     try:
@@ -116,7 +182,7 @@ def create_langchain_chat_model():
         mlflow.set_experiment(experiment_name)
     with mlflow.start_run():
         logged_chain_info = mlflow.langchain.log_model(
-            lc_model=chain
+            lc_model=full_chain
             ,artifact_path="chain"  # Required by MLflow
             ,input_example=  {"messages": [
                             {
