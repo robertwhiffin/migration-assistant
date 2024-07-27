@@ -69,17 +69,17 @@ def create_langchain_chat_model():
         ]
     )
     is_question_about_sql_str = """
-        You are classifying Questions to know if this question is related to Databricks and SQL in general
+    You are classifying Questions to know if this question is related to Databricks and SQL in general
 
-        Question: Convert to Spark SQL SELECT * from table 1?
-        Expected Response: Yes
+    Question: Convert to Spark SQL SELECT * from table 1?
+    Expected Response: Yes
 
-        Question: Knowing this followup history: Convert to Spark SQL SELECT * from table 1?, classify this question: Write me a song.
-        Expected Response: No
+    Question: Knowing this followup history: Convert to Spark SQL SELECT * from table 1?, classify this question: Summarize the query.
+    Expected Response: Yes
 
-        Only answer with "yes" or "no". 
+    Only answer with "yes" or "no". 
 
-        Knowing this followup history:"""
+    Knowing this followup history:"""
 
     is_question_relevant_prompt = ChatPromptTemplate.from_messages(
         [
