@@ -85,8 +85,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         - Using the proper columns for joins
                         
                         Use format:
-                        
-                        First draft: <<FIRST_DRAFT_QUERY>>
                         Final answer: <<FINAL_ANSWER_QUERY>>
                         """
                 .strip()

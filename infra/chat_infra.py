@@ -137,11 +137,29 @@ def create_langchain_chat_model():
         | model
         | StrOutputParser())
 
-    irrelevant_question_chain = (
-        RunnableLambda(lambda x: {"result": 'I cannot answer questions that are not about Databricks or Spark SQL'}))
+    irrelevant_question_chain =  (
+    RunnableLambda(lambda x:{
+    "id": "null",
+    "object": "mock.chat.completion",
+    "created": 1722193932,
+    "model": "irrelevant_call",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "I cannot answer questions that are not about Databricks or Spark SQL"
+            },
+            "finish_reason": "Standard response"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+    }
 
-
-
+} ))
 
     chain = (
         RunnablePassthrough() |
