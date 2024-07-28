@@ -225,9 +225,10 @@ def setup_chat_infra():
     catalog = os.environ.get("CATALOG")
     schema = os.environ.get("SCHEMA")
     UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
+    DATABRICKS_TOKEN_SECRET_SCOPE = os.environ.get("DATABRICKS_TOKEN_SECRET_SCOPE")
+    DATABRICKS_TOKEN_SECRET_KEY = os.environ.get("DATABRICKS_TOKEN_SECRET_KEY")
     serving_endpoint_name = os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME")
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
-    DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
     DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
 
     # Create the model if it doesn't exist
@@ -252,7 +253,7 @@ def setup_chat_infra():
         "table_name_prefix": serving_endpoint_name
         }
     environment_vars={
-        "DATABRICKS_TOKEN": DATABRICKS_TOKEN
+        "DATABRICKS_TOKEN": f"{{{{secrets/{DATABRICKS_TOKEN_SECRET_SCOPE}/{DATABRICKS_TOKEN_SECRET_KEY}}}}}"
         ,"DATABRICKS_HOST": DATABRICKS_HOST
         ,"ENABLE_MLFLOW_TRACING": "true"
     }
