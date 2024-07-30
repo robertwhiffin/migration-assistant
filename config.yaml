@@ -8,7 +8,7 @@ DATABRICKS_TOKEN_SECRET_KEY: FILL ME IN
 DATABRICKS_HOST: FILL ME IN
 
 ### VECTOR SEARCH PARAMETERS
-# The Vector Search endpoint which will host the index
+# The Vector Search endpoint which will host the index. Endpoint will be created if not found.
 VECTOR_SEARCH_ENDPOINT_NAME: FILL ME IN
 # the embedding model name. If not using one of the default Foundation Model APIs this model will need to be served.
 EMBEDDING_MODEL_ENDPOINT: FILL ME IN
