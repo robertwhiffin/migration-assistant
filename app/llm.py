@@ -59,7 +59,7 @@ class LLMCalls():
         )
         # Extract the code from in between the triple backticks (```), since LLM often prints the code like this.
         # Also removes the 'sql' prefix always added by the LLM.
-        translation = llm_answer.split("Final answer:\n")[1].replace(">>", "").replace("<<", "")
+        translation = llm_answer#.split("Final answer:\n")[1].replace(">>", "").replace("<<", "")
         return translation
 
 
