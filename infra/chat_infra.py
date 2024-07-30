@@ -4,6 +4,8 @@ from mlflow.tracking import MlflowClient
 
 import os
 
+import HTTPError
+
 from utils.endpointclient import EndpointApiClient
 
 from langchain_community.chat_models import ChatDatabricks
@@ -257,14 +259,14 @@ def setup_chat_infra():
         ,"DATABRICKS_HOST": DATABRICKS_HOST
         ,"ENABLE_MLFLOW_TRACING": "true"
     }
-    serving_client.create_endpoint_if_not_exists(
-        serving_endpoint_name
-        , model_name=fully_qualified_name
-        , model_version = latest_model.version
-        , workload_size="Small"
-        , scale_to_zero_enabled=True
-        , wait_start = True
-        , auto_capture_config=auto_capture_config
-        , environment_vars=environment_vars
-    )
 
+    serving_client.create_endpoint_if_not_exists(
+            serving_endpoint_name
+            , model_name=fully_qualified_name
+            , model_version = latest_model.version
+            , workload_size="Small"
+            , scale_to_zero_enabled=True
+            , wait_start = True
+            , auto_capture_config=auto_capture_config
+            , environment_vars=environment_vars
+        )

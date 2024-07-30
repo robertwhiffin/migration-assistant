@@ -84,8 +84,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                         - Casting to the correct data type
                         - Using the proper columns for joins
                         
-                        Use format:
-                        Final answer: <<FINAL_ANSWER_QUERY>>
+                        Return the final translated query only. Include comments. Include only SQL.
                         """
                 .strip()
                 ,lines=40
