@@ -4,8 +4,6 @@ from mlflow.tracking import MlflowClient
 
 import os
 
-import HTTPError
-
 from utils.endpointclient import EndpointApiClient
 
 from langchain_community.chat_models import ChatDatabricks
