@@ -1,14 +1,17 @@
-from openai import OpenAI
-
+#from openai import OpenAI
+import os
+from langchain_community.chat_models import ChatDatabricks
 class LLMCalls():
     def __init__(self, databricks_host, databricks_token, model_name, max_tokens):
-        self.MODEL_SERVING_ENDPOINT_URL = f"https://{databricks_host}/serving-endpoints"
-        self.client = OpenAI(
-            api_key=databricks_token,
-            base_url=self.MODEL_SERVING_ENDPOINT_URL
-        )
-        self.model_name = model_name
-        self.max_tokens = int(max_tokens)
+        # self.MODEL_SERVING_ENDPOINT_URL = f"https://{databricks_host}/serving-endpoints"
+        # self.client = OpenAI(
+        #     api_key=databricks_token,
+        #     base_url=self.MODEL_SERVING_ENDPOINT_URL
+        # )
+        # self.model_name = model_name
+        # self.max_tokens = int(max_tokens)
+        self.model = ChatDatabricks(endpoint=os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME"))
+
 
     def call_llm(self, messages):
         """
@@ -18,12 +21,15 @@ class LLMCalls():
         :param max_tokens: the maximum number of tokens to generate
         :return: the response from the model
         """
-        chat_completion = self.client.chat.completions.create(
-            messages=messages,
-            model=self.model_name,
-            max_tokens=self.max_tokens
-        )
-        return chat_completion.choices[0].message.content
+        return self.model.invoke(messages).content
+        # chat_completion = self.client.chat.completions.create(
+        #     messages=messages,
+        #     model=self.model_name,
+        #     max_tokens=self.max_tokens
+        # )
+        # return chat_completion.choices[0].message.content
+
+
 
     def convert_chat_to_llm_input(self, system_prompt, chat):
         # Convert the chat list of lists to the required format for the LLM
@@ -53,7 +59,7 @@ class LLMCalls():
         )
         # Extract the code from in between the triple backticks (```), since LLM often prints the code like this.
         # Also removes the 'sql' prefix always added by the LLM.
-        translation = llm_answer.split("Final answer:\n")[1].replace(">>", "").replace("<<", "")
+        translation = llm_answer#.split("Final answer:\n")[1].replace(">>", "").replace("<<", "")
         return translation
 
 

@@ -1,18 +1,40 @@
+###### Configuration file for the migration assistant ######
+### DATABRICKS WORKSPACE PARAMETERS
 # The scope where the PAT is stored
 DATABRICKS_TOKEN_SECRET_SCOPE: 'fieldeng'
 # The key underwhich the PAT is stored
 DATABRICKS_TOKEN_SECRET_KEY: 'rgwhiffin'
+# hostname of the databricks workspaces - DO NOT PUT A TRAILING /
+DATABRICKS_HOST: "https://adb-984752964297111.11.azuredatabricks.net"
+
+### VECTOR SEARCH PARAMETERS
 # The Vector Search endpoint which will host the index
 VECTOR_SEARCH_ENDPOINT_NAME: 'one-env-shared-endpoint-4'
-# the fully qualified name of the VS index "<catalog>.<schema>.<index_name>"
-VS_INDEX_FULLNAME : "robert_whiffin.dfe_code_assistant.code_intent_vs_index"
-# the fully qualified name of table which backs the VS index "<catalog>.<schema>.<table_name>"
-INTENT_TABLE: "robert_whiffin.dfe_code_assistant.code_intent_table"
-# the http path from the connection details of a SQL Warehouse. 
+# the embedding model name. If not using one of the default Foundation Model APIs this model will need to be served.
+EMBEDDING_MODEL_ENDPOINT: "databricks-gte-large-en"
+# the  name of the VS index to create. will be placed in the catalog and schema defined above
+VS_INDEX_FULLNAME : "code_intent_vs_index"
+# the name of table to store the code intent. will be placed in the catalog and schema defined above
+VS_INTENT_TABLE: "code_intent_table"
+
+### UNITY CATALOG PARAMETERS
+# Unity Catalog catalog for storing tables
+CATALOG: "robert_whiffin"
+# Unity Catalog schema for storing tables
+SCHEMA: "migration_assistant"
+
+### SQL WAREHOUSE PARAMETERS
+# the http path from the connection details of a SQL Warehouse.
 SQL_WAREHOUSE_HTTP_PATH: "/sql/1.0/warehouses/d1184b8c2a8a87eb"
-# hostname of the databricks workspaces - DO NOT PUT A TRAILING /
-DATABRICKS_HOST: "adb-984752964297111.11.azuredatabricks.net"
-# the served model to use. This needs to be a chat model (e.g. one ending in -instruct)
-SERVED_MODEL_NAME: "databricks-meta-llama-3-70b-instruct"
+
+### Chatbot Parameters
+# the foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).
+# If not using one of the default Foundation Model APIs this model will need to be served.
+SERVED_FOUNDATION_MODEL_NAME: "databricks-meta-llama-3-70b-instruct"
 # how many tokens is the model allowed to generate. 
 MAX_TOKENS: 4096
+# mlflow experiment name for tracing and logging
+MLFLOW_EXPERIMENT_NAME: "/Users/robert.whiffin@databricks.com/databricks-project-gamma"
+# mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
+MLFLOW_MODEL_NAME: "gamma-chain"
+LANGCHAIN_SERVING_ENDPOINT_NAME: "project-gamma-endpoint"
