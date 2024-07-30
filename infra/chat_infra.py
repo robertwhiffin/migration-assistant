@@ -231,9 +231,6 @@ def setup_chat_infra():
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
     DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
 
-    # Create the model if it doesn't exist
-    create_langchain_chat_model()
-
     # Get the latest model version
     client = MlflowClient()
     def get_latest_model_version(model_name):
