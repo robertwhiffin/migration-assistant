@@ -231,6 +231,9 @@ def setup_chat_infra():
     fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
     DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
 
+    serving_client = EndpointApiClient()
+    if serving_client.inference_endpoint_exists(serving_endpoint_name):
+        return None
     # Get the latest model version
     client = MlflowClient()
     def get_latest_model_version(model_name):
@@ -242,7 +245,7 @@ def setup_chat_infra():
     latest_model = client.get_model_version(fully_qualified_name,latest_version)
 
     #TODO: use the sdk once model serving is available.
-    serving_client = EndpointApiClient()
+
     # Start the endpoint using the REST API (you can do it using the UI directly)
     auto_capture_config = {
         "catalog_name": catalog,
