@@ -8,9 +8,16 @@ DATABRICKS_TOKEN_SECRET_KEY: FILL ME IN
 DATABRICKS_HOST: FILL ME IN
 
 ### VECTOR SEARCH PARAMETERS
-# The Vector Search endpoint which will host the index. Endpoint will be created if not found.
-VECTOR_SEARCH_ENDPOINT_NAME: FILL ME IN
+# The Vector Search endpoint which will host the index. Endpoint will be created if not found
+# and you have the correct permissions.
+# see here https://docs.databricks.com/en/generative-ai/vector-search.html#how-to-set-up-mosaic-ai-vector-search
+VECTOR_SEARCH_ENDPOINT_NAME: FILL ME IN # eg "gamma-vector-search-endpoint"
+
 # the embedding model name. If not using one of the default Foundation Model APIs this model will need to be served.
+# if using foundation model pay per token API, this might be "databricks-gte-large-en"
+# otherwise you will need to serve an embedding model. Instructions here:
+# https://docs.databricks.com/en/machine-learning/model-serving/create-foundation-model-endpoints.html
+# Databricks provides a set of embedding models in the schema catalog.ai for easy hosting from Unity Catalog (the bge* models)
 EMBEDDING_MODEL_ENDPOINT: FILL ME IN
 # the  name of the VS index to create. will be placed in the catalog and schema defined above
 # change if you don't like the default name
@@ -23,21 +30,28 @@ VS_INTENT_TABLE: "gamma_code_intent_table"
 # Unity Catalog catalog for storing tables
 CATALOG: FILL ME IN
 # Unity Catalog schema for storing tables
-SCHEMA: FILL ME IN
+SCHEMA: 'gamma-migration-assistant'
 
 ### SQL WAREHOUSE PARAMETERS
-# the http path from the connection details of a SQL Warehouse.
+# the http path from the connection details of a SQL Warehouse. This is retreived from the connection details of the SQL
+# warehouse page in the Databricks workspace.
 # eg "/sql/1.0/warehouses/d1184b8c2a8a87eb"
 SQL_WAREHOUSE_HTTP_PATH: FILL ME IN
 
 ### CHATBOT PARAMETERS
-# the foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).
+# The foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).
 # If not using one of the default Foundation Model APIs this model will need to be served.
+# if using foundation model pay per token API, this might be "databricks-meta-llama-3-1-405b-instruct"
+# otherwise you will need to serve a foundation model. Instructions here:
+# https://docs.databricks.com/en/machine-learning/model-serving/create-foundation-model-endpoints.html
+# Databricks provides a set of foundation models in the schema catalog.ai for easy hosting from Unity Catalog.
+# You need to serve a model ending in -instruct.
 SERVED_FOUNDATION_MODEL_NAME: FILL ME IN
 # how many tokens is the model allowed to generate.
 # Default value.
 MAX_TOKENS: 4096
-# mlflow experiment name for tracing and logging
+# mlflow experiment name for tracing and logging Replace with your own Databricks user name - experiments must be
+# saved in the /Users folder of the workspace and will error if not.
 # eg "/Users/<user name>/databricks-project-gamma"
 MLFLOW_EXPERIMENT_NAME: FILL ME IN
 # mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
