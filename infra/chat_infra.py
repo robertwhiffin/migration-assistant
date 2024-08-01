@@ -20,6 +20,7 @@ def create_langchain_chat_model():
     # ## Enable MLflow Tracing
     mlflow.login()
     mlflow.langchain.autolog()
+    mlflow.set_registry_uri("databricks-uc")
     ############
 
     FOUNDATION_MODEL = os.environ.get("SERVED_FOUNDATION_MODEL_NAME")
