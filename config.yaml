@@ -27,9 +27,11 @@ VS_INDEX_FULLNAME : "gamma_code_intent_vs_index"
 VS_INTENT_TABLE: "gamma_code_intent_table"
 
 ### UNITY CATALOG PARAMETERS
-# Unity Catalog catalog for storing tables
+# Unity Catalog catalog for storing tables.
+# Will be created if does not exist and you have CREATE CATALOG permission.
 CATALOG: FILL ME IN
 # Unity Catalog schema for storing tables
+# Will be created if does not exist and you have CREATE SCHEMA permission in the catalog defined above.
 SCHEMA: 'gamma-migration-assistant'
 
 ### SQL WAREHOUSE PARAMETERS
@@ -57,6 +59,6 @@ MLFLOW_EXPERIMENT_NAME: FILL ME IN
 # mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
 # change if you don't like the default name
 MLFLOW_MODEL_NAME: "gamma-chain"
-# the CPU endpoint to serve the langchain model
+# the CPU endpoint to serve the langchain model. Will be created if not found.
 # change if you don't like the default name
 LANGCHAIN_SERVING_ENDPOINT_NAME: "project-gamma-endpoint"
