@@ -10,7 +10,7 @@ class SimilarCode():
                 ,personal_access_token = databricks_token
             )
         self.vector_search_endpoint_name = vector_search_endpoint_name
-        self.vs_index_fullname = vs_index_fullname
+        self.vs_index_fullname = f"{catalog}.{schema}.{vs_index_fullname}"
         self.intent_table = f"{catalog}.{schema}.{intent_table}"
 
 
