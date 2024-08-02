@@ -22,7 +22,8 @@ SQL_WAREHOUSE_HTTP_PATH = os.environ.get("SQL_WAREHOUSE_HTTP_PATH")
 VECTOR_SEARCH_ENDPOINT_NAME = os.environ.get("VECTOR_SEARCH_ENDPOINT_NAME")
 VS_INDEX_FULLNAME = os.environ.get("VS_INDEX_FULLNAME")
 INTENT_TABLE = os.environ.get("VS_INTENT_TABLE")
-
+CATALOG = os.environ.get("CATALOG")
+SCHEMA = os.environ.get("SCHEMA")
 
 
 sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
@@ -34,6 +35,8 @@ similar_code_helper = SimilarCode(
     , DATABRICKS_HOST
     , VECTOR_SEARCH_ENDPOINT_NAME
     , VS_INDEX_FULLNAME
+    , CATALOG
+    , SCHEMA
     , INTENT_TABLE
 )
 

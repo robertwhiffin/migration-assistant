@@ -4,14 +4,14 @@ from databricks.vector_search.client import VectorSearchClient
 
 class SimilarCode():
 
-    def __init__(self, databricks_token, databricks_host, vector_search_endpoint_name, vs_index_fullname, intent_table):
+    def __init__(self, databricks_token, databricks_host, vector_search_endpoint_name, vs_index_fullname, catalog, schema, intent_table):
         self.vsc = VectorSearchClient(
                 workspace_url = "https://" + databricks_host
                 ,personal_access_token = databricks_token
             )
         self.vector_search_endpoint_name = vector_search_endpoint_name
         self.vs_index_fullname = vs_index_fullname
-        self.intent_table = intent_table
+        self.intent_table = f"{catalog}.{schema}.{intent_table}"
 
 
     def save_intent(self, code, intent, cursor):
