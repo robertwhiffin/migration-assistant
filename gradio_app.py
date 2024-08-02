@@ -28,6 +28,7 @@ INTENT_TABLE = os.environ.get("VS_INTENT_TABLE")
 sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
 translation_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN,MODEL_NAME,MAX_TOKENS)
 intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
+intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
 similar_code_helper = SimilarCode(
       DATABRICKS_TOKEN
     , DATABRICKS_HOST
@@ -122,15 +123,15 @@ FROM
       ,e.[department_id]
       ,COUNT(d.[dependent_id]) AS dep_count
     FROM
-      [robert_whiffin].[dfe_code_assistant].[employees] e
-      LEFT JOIN [robert_whiffin].[dfe_code_assistant].[dependents] d ON e.[employee_id] = d.[employee_id]
+      [robert_whiffin].[code_assistant].[employees] e
+      LEFT JOIN [robert_whiffin].[code_assistant].[dependents] d ON e.[employee_id] = d.[employee_id]
     GROUP BY
       e.[employee_id]
       ,e.[department_id]
   ) AS subquery
-  JOIN [robert_whiffin].[dfe_code_assistant].[departments] dep ON subquery.[department_id] = dep.[department_id]
-  JOIN [robert_whiffin].[dfe_code_assistant].[locations] l ON dep.[location_id] = l.[location_id]
-  JOIN [robert_whiffin].[dfe_code_assistant].[countries] c ON l.[country_id] = c.[country_id]
+  JOIN [robert_whiffin].[code_assistant].[departments] dep ON subquery.[department_id] = dep.[department_id]
+  JOIN [robert_whiffin].[code_assistant].[locations] l ON dep.[location_id] = l.[location_id]
+  JOIN [robert_whiffin].[code_assistant].[countries] c ON l.[country_id] = c.[country_id]
 GROUP BY
   c.[country_name]
 ORDER BY
