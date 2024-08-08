@@ -1,11 +1,11 @@
-name: docs
+name: docs_old
 on:
   push:
     branches:
     - main
     - feature/docs_fix
     - feature/new_docs
-    - "*docs*"
+    - "*docs_old*"
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -25,8 +25,8 @@ jobs:
     - name: Build and Commit
       uses: sphinx-notes/pages@v2
       with:
-        documentation_path: docs/source
-        requirements_path: docs/docs-requirements.txt
+        documentation_path: docs_old/source
+        requirements_path: docs_old/docs_old-requirements.txt
     - name: checkout v0.3.x archive
       # Please do not change any step in here, even though it may look hacky
       # This is the only way to emulate git archive --remote with actions/checkout
@@ -37,7 +37,7 @@ jobs:
       # git archive gh-pages-v0.3.x | tar -x -C ./v0.3.x is required to extract the archive
       # in the right place
       # git add --all is required to add the new files to the working branch
-      # git commit -am "Adding v0.3.x docs" is required to commit the changes
+      # git commit -am "Adding v0.3.x docs_old" is required to commit the changes
       run: |
         git checkout gh-pages-v0.3.x
         git pull
