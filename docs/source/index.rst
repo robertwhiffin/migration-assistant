@@ -14,7 +14,7 @@ Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   usage
+   usage/installation
 
 
 Legion is a Databricks field project to accelerate migrations on to Databricks leveraging the platform’s generative AI
