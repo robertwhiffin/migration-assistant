@@ -31,19 +31,15 @@ release = "v0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx_material",
     "nbsphinx",
     "sphinx_tabs.tabs",
     "sphinx.ext.githubpages",
     "sphinx.ext.autosectionlabel",
-    "sphinx.ext.todo",
-    "sphinx.ext.autodoc"
+    "sphinx.ext.todo"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-autodoc_typehints = "description"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -62,16 +58,42 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'piccolo_theme'
-html_theme_path = ['_theme']
+html_theme = 'renku'
 
-html_logo = '_images/logo.png'
+# Material theme options (see theme.conf for more information)
+html_theme_options = {
 
+    # Set the name of the project to appear in the navigation.
+    'nav_title': f'Legion {release}',
+
+    # Specify a base_url used to generate sitemap.xml. If not
+    # specified, then no sitemap will be built.
+    # 'base_url': 'https://project.github.io/project',
+
+    # Set the color and the accent color
+    'color_primary': 'green',
+    'color_accent': 'green',
+
+    # Set the repo location to get a badge with stats
+    'repo_url': 'https://github.com/robertwhiffin/migration-assistant',
+    'repo_name': 'Legion',
+
+    'globaltoc_depth': 3,
+    'globaltoc_collapse': False,
+    'globaltoc_includehidden': True,
+    "version_dropdown": True,
+    # "version_json": "../versions-v2.json",
+
+}
+html_title = project
+html_short_title = project
+#html_logo = 'images/mosaic_logo.svg'
+html_sidebars = {
+    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
+}
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 html_css_files = ["css/custom.css"]
-
-# html_theme_options = {
-#     "source_url": 'https://github.com/databricks-industry-solutions/auto-data-linkage',
-#     "source_icon": "github",
-#     "banner_text": "ARC (Auto-Record-Linkage) is a simple, scalable and unsupervised record linkage library on Databricks.",
-# }
