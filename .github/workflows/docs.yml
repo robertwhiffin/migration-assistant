@@ -5,6 +5,7 @@ on:
     - main
     - feature/docs_fix
     - feature/new_docs
+    - "*docs*"
 jobs:
   build:
     runs-on: ubuntu-22.04
