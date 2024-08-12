@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Set up instructions &#8212; Legion v0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Documentation" href="../index.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="set-up-instructions">
+<h1>Set up instructions<a class="headerlink" href="#set-up-instructions" title="Permalink to this headline">¶</a></h1>
+<p>Setting Legion up is mostly automated but does required a few manual steps. Read these instructions fully before starting.</p>
+<p>Ensure you have access to a foundation LLM: Databricks Pay Per Token Foundation Model Serving is the easiest option, alternatively serve an LLM through Provisioned Throughput. Make note of the served model name.</p>
+<p>Ensure you have access to an embedding model: Databricks Pay Per Token Foundation Model Serving is the easiest option, alternatively serve an embedding model through Provisioned Throughput. Make note of the served model name.</p>
+<p>Upload a PAT to a secret. Make note of the secret scope and key.</p>
+<p>Clone the Legion repo into your Databricks workspace.</p>
+<p>In the top level of the repo is the <em>config.yaml</em>. This file has a number of values of <strong>FILL ME IN</strong> - these need to be filled in with the relevant values. The documentation for these is found in the config file. A number of default values are provided - these can be left as is or changed as desired.</p>
+<p>Run the notebook run_app_from_databricks_notebook on a no-isolation-shared cluster. This is necessary to give other users access to the app - otherwise only the user who has assigned permission to the cluster can use it. Do not use serverless all purpose compute - set up will succeed, but deploying the app will fail. This notebook will create all the infrastructure required (UC catalog and schema, vector search index, table, and endpoint, langchain model, and CPU serving endpoint for langchain model).
+NB - there has been a noticeable difference in startup times observed between AWS (e2-field-eng-west) and Azure (field-eng-east) workspaces, with AWS taking over an hour to provision a CPU endpoint and Azure ~15 minutes.</p>
+<p>The final output of the notebook in 6) will give a URL in the output to a Gradio app, e.g.
+Use this link to access the Gradio UI in Databricks: <a class="reference external" href="https://adb-dp-984752964297111.11.azuredatabricks.net/driver-proxy/o/984752964297111/0730-141509-r58zrw8u/8080/">https://adb-dp-984752964297111.11.azuredatabricks.net/driver-proxy/o/984752964297111/0730-141509-r58zrw8u/8080/</a>
+Click this link to launch the app and get started!
+NB - this needs to be run on a no-isolation shared cluster to allow access to the app. This method of hosting should only be used for PoC and demo purposes. Production deployments should be hosted in Lakehouse Apps (on the roadmap) or integrated into a customer’s existing sites.</p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Legion</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Set up instructions</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">Documentation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2024, Databricks Inc.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/usage/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
