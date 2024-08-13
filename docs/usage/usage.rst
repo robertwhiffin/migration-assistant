@@ -7,8 +7,8 @@ button. The code will be automatically translated into the target language. and 
 in the output window.
 
 .. image:: ../images/translation_screen.png
-    ..:width: 1688px
-    ..:height: 873px
+    ..:width: 844px
+    ..:height: 436px
     :alt: Legion Translation Screen
     :align: center
 
@@ -20,8 +20,8 @@ performance for the translation. This is done in the Advanced tab above the Tran
 screen. This is the example prompt included for a T-SQL to Spark SQL translation.
 
 .. image:: ../images/translation_prompt.png
-   ..:width: 1680px
-    ..:height: 1132px
+    :width: 840px
+    :height: 566px
     :alt: Legion Translation Prompt
     :align: center
 
@@ -32,8 +32,8 @@ the AI Agent. As with code translation, the Advanced tab can be used to tune the
 prompt, for example to add in business specific knowledge such as acronyms or domain jargon.
 
 .. image:: ../images/intent_generation.png
-    ..:width: 1661px
-    ..:height: 600px
+    :width: 830px
+    :height: 300px
     :alt: Legion Intent Generation
     :align: center
 
@@ -41,7 +41,7 @@ Finally, the user will click the "Save intent and code" button once the intent i
 This will store the intent and code in the database for future reference and discoverability.
 
 .. image:: ../images/similar_code.png
-    ..:width: 1640px
-    ..:height: 824px
+    :width: 820px
+    :height: 412px
     :alt: Legion Similar Code
     :align: center
