@@ -7,8 +7,8 @@ button. The code will be automatically translated into the target language. and 
 in the output window.
 
 .. image:: ../images/translation_screen.png
-    ..:width: 844px
-    ..:height: 436px
+    :width: 844px
+    :height: 436px
     :alt: Legion Translation Screen
     :align: center
 
