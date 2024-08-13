@@ -1,8 +1,3 @@
-.. ARC documentation master file, created by
-   sphinx-quickstart on Wed Feb  2 11:01:42 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to Legion's documentation!
 
 Documentation
@@ -15,6 +10,7 @@ Documentation
    :caption: Contents:
 
    usage/installation
+   usage/usage
 
 
 Legion is a Databricks field project to accelerate migrations on to Databricks leveraging the platform’s generative AI
