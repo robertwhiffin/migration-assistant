@@ -6,7 +6,7 @@ Usage of Legion is simple; paste code into the editor, and press the "Translate"
 button. The code will be automatically translated into the target language. and presented
 in the output window.
 
-..image:: images/translation_screen.png
+.. image:: images/translation_screen.png
     :width: 900px
     :height: 600px
     :alt: Legion Translation Screen
@@ -19,7 +19,7 @@ Migration SMEs and advanced users will need to tune the system prompt to get the
 performance for the translation. This is done in the Advanced tab above the Translation
 screen. This is the example prompt included for a T-SQL to Spark SQL translation.
 
-..image:: images/translation_prompt.png
+.. image:: images/translation_prompt.png
     :width: 900px
     :height: 600px
     :alt: Legion Translation Prompt
@@ -31,7 +31,7 @@ The chat interface allows the user to refine the intent statement in conversatio
 the AI Agent. As with code translation, the Advanced tab can be used to tune the system
 prompt, for example to add in business specific knowledge such as acronyms or domain jargon.
 
-..image:: images/intent_generation.png
+.. image:: images/intent_generation.png
     :width: 900px
     :height: 600px
     :alt: Legion Intent Generation
@@ -40,7 +40,7 @@ prompt, for example to add in business specific knowledge such as acronyms or do
 Finally, the user will click the "Save intent and code" button once the intent is refined.
 This will store the intent and code in the database for future reference and discoverability.
 
-..image:: images/similar_code.png
+.. image:: images/similar_code.png
     :width: 900px
     :height: 600px
     :alt: Legion Similar Code
