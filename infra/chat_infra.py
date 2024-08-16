@@ -259,6 +259,8 @@ def setup_chat_infra():
         ,"ENABLE_MLFLOW_TRACING": "true"
     }
 
+    # TODO - add in check to see if tracing tables exist and error if they do. Cannot create an endpoint if the
+    #  tables already exist.
     serving_client.create_endpoint_if_not_exists(
             serving_endpoint_name
             , model_name=fully_qualified_name
