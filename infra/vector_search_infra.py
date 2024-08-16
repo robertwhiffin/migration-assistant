@@ -1,74 +1,134 @@
-from infra.unity_catalog_infra import setup_UC_infra
-from app.sql_interface import SQLInterface
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput
+from databricks.sdk.service.vectorsearch import EndpointType, DeltaSyncVectorIndexSpecRequest, PipelineType, EmbeddingSourceColumn, VectorIndexType
 
-import os
-from databricks.vector_search.client import VectorSearchClient
-
-def setup_VS_infra():
-
-    # get environment variables
-    DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
-    DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
-    SQL_WAREHOUSE_HTTP_PATH = os.environ.get("SQL_WAREHOUSE_HTTP_PATH")
-    UC_CATALOG = os.environ.get("CATALOG")
-    UC_SCHEMA = os.environ.get("SCHEMA")
-    VECTOR_SEARCH_ENDPOINT_NAME = os.environ.get("VECTOR_SEARCH_ENDPOINT_NAME")
-    VS_INDEX_FULLNAME = os.environ.get("VS_INDEX_FULLNAME")
-    VS_INTENT_TABLE = os.environ.get("VS_INTENT_TABLE")
-    EMBEDDING_MODEL_ENDPOINT = os.environ.get("EMBEDDING_MODEL_ENDPOINT")
-    sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
-
-    # do UC setup if not done
-    setup_UC_infra()
-
-    # create table to store code and intent if doesn't exist
-    sql_interface.execute_sql(
-        sql_interface.cursor
-        , f"CREATE TABLE IF NOT EXISTS `{UC_CATALOG}`.`{UC_SCHEMA}`.`{VS_INTENT_TABLE}` (id BIGINT, code STRING, intent STRING) TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-    )
-
-    client = VectorSearchClient()
+import logging
+import mlflow
+from mlflow.tracking import MlflowClient
 
 
-    # create vector search endpoint if doesn't exist.
-    try:
-        # if endpoint exists, do nothing
-        client.get_endpoint(VECTOR_SEARCH_ENDPOINT_NAME)
-    except Exception as e:
-        # if endpoint doesn't exist, create it
-        if '"error_code":"NOT_FOUND"' in str(e):
+
+
+class VectorSearchInfra():
+    def __init__(self, config):
+        self.w = WorkspaceClient()
+
+        self.config = config
+
+        # get defaults from config file
+        self.default_VS_endpoint_name = self.config.get("VECTOR_SEARCH_ENDPOINT_NAME")
+        self.default_embedding_endpoint_name = self.config.get("EMBEDDING_MODEL_ENDPOINT_NAME")
+        self.default_embedding_model_UC_path = self.config.get("EMBEDDING_MODEL_UC_PATH")
+
+        # these are updated as the user makes a choice about which VS endpoint and embedding model to use.
+        # the chosen values are then written back into the config file.
+        self.migration_assistant_VS_endpoint = None
+        self.migration_assistant_embedding_model_name = None
+
+        # these are not configurable by the end user
+        self.migration_assistant_VS_index = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('VS_INDEX_NAME')}"
+        self.migration_assistant_VS_table = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('VS_INTENT_TABLE_NAME')}"
+
+
+    def choose_VS_endpoint(self):
+        '''Ask the user to choose an existing vector search endpoint or create a new one.
+        '''
+        endpoints = [f"CREATE NEW VECTOR SEARCH ENDPOINT: {self.default_VS_endpoint_name}"]
+        # Create a list of all endpoints in the workspace. Returns a generator
+        endpoints.extend(list(self.w.vector_search_endpoints.list_endpoints()))
+
+        print("Choose a Vector Search endpoint:")
+        for i, endpoint in enumerate(endpoints):
             try:
-                client.create_endpoint_and_wait(
-                    name=VECTOR_SEARCH_ENDPOINT_NAME
-                    ,endpoint_type="STANDARD"
-                    ,verbose=True
-                )
-            # if get a different error, raise it
-            except Exception as e:
-                raise e
+                print(f"{i}: {endpoint.name} ({endpoint.num_indexes} indexes)")
+            except:
+                print(f"{i}: {endpoint}")
+        choice = int(input())
+        if choice == 0:
+            self.migration_assistant_VS_endpoint = self.default_VS_endpoint_name
+            logging.info(f"Creating new VS endpoint {self.migration_assistant_VS_endpoint}."
+                         f"This will take a few minutes."
+                         f"Check status here: {self.w.config.host}/compute/vector-search/{self.migration_assistant_VS_endpoint}")
+            self.create_VS_endpoint()
         else:
-            pass
+            self.migration_assistant_VS_endpoint = endpoints[choice].name
+            # update config with user choice
+            self.config['VECTOR_SEARCH_ENDPOINT_NAME'] = self.migration_assistant_VS_endpoint
 
-    # if index exists, do nothing
-    try:
-        client.get_index(VECTOR_SEARCH_ENDPOINT_NAME, f"{UC_CATALOG}.{UC_SCHEMA}.{VS_INDEX_FULLNAME}")
-    except Exception as e:
-        # if index doesn't exist, create it
-        if '"error_code":"RESOURCE_DOES_NOT_EXIST"' in str(e):
+    def choose_embedding_model(self):
+        # list all serving endpoints with a task of embedding
+        endpoints = [f"CREATE NEW EMBEDDING MODEL ENDPOINT {self.default_embedding_endpoint_name} USING"
+                     f" {self.default_embedding_model_UC_path}"]
+
+        endpoints.extend(list(filter(lambda x: "embedding" in x.task if x.task else False,  self.w.serving_endpoints.list())))
+        print("Choose an embedding model endpoint:")
+        for i, endpoint in enumerate(endpoints):
             try:
-                client.create_delta_sync_index(
-                    endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME
-                    ,index_name=f"{UC_CATALOG}.{UC_SCHEMA}.{VS_INDEX_FULLNAME}"
-                    ,source_table_name=f"{UC_CATALOG}.{UC_SCHEMA}.{VS_INTENT_TABLE}"
-                    ,pipeline_type='TRIGGERED'
-                    ,primary_key="id"
-                    ,embedding_source_column="code"
-                    ,embedding_model_endpoint_name=EMBEDDING_MODEL_ENDPOINT
-                )
-            # if get a different error, raise it
-            except Exception as e:
-                raise e
+                print(f"{i}: {endpoint.name}")
+            except:
+                print(f"{i}: {endpoint}")
+        choice = int(input())
+        if choice == 0:
+            self.migration_assistant_embedding_model_name = self.default_embedding_endpoint_name
+            logging.info(f"Creating new model serving endpoint {self.migration_assistant_embedding_model_name}. "
+                         f"This will take a few minutes."
+                         f"Check status here: {self.w.config.host}/ml/endpoints/{self.migration_assistant_embedding_model_name}")
+            self.create_embedding_model_endpoint()
         else:
-            pass
+            self.migration_assistant_embedding_model_name = endpoints[choice].name
+            self.config['EMBEDDING_MODEL_ENDPOINT_NAME'] = self.migration_assistant_embedding_model_name
+
+    def create_embedding_model_endpoint(self):
+        def get_latest_model_version(model_name):
+            # need this to get the model version from UC as it's not available directly
+            mlflow.set_registry_uri("databricks-uc")
+            client = MlflowClient()
+            model_version_infos = client.search_model_versions("name = '%s'" % model_name)
+            return max([int(model_version_info.version) for model_version_info in model_version_infos]) or 1
+
+        latest_version = get_latest_model_version(model_name=self.default_embedding_model_UC_path)
+        latest_version = str(latest_version)
+
+        self.w.serving_endpoints.create(
+            name=self.migration_assistant_embedding_model_name
+            ,config=EndpointCoreConfigInput(
+                name=self.migration_assistant_embedding_model_name
+                ,served_entities=[
+                    ServedEntityInput(
+                        entity_name=self.default_embedding_model_UC_path
+                        ,entity_version=latest_version
+                        ,name=self.migration_assistant_embedding_model_name
+                        ,scale_to_zero_enabled=True
+                        ,workload_type="GPU_SMALL"
+                        ,workload_size="Small"
+                    )
+                ]
+            )
+        )
+
+    def create_VS_endpoint(self):
+        self.w.vector_search_endpoints.create_endpoint(
+            name = self.migration_assistant_VS_endpoint,
+            endpoint_type = EndpointType.STANDARD
+        )
+
+    def create_VS_index(self):
+        self.w.vector_search_indexes.create_index(
+            name=self.migration_assistant_VS_index
+            ,endpoint_name=self.migration_assistant_VS_endpoint
+            ,primary_key="id"
+            ,index_type=VectorIndexType.DELTA_SYNC
+            ,delta_sync_index_spec=DeltaSyncVectorIndexSpecRequest(
+                source_table=self.migration_assistant_VS_table
+                ,pipeline_type=PipelineType.TRIGGERED
+                ,embedding_source_columns=[
+                    EmbeddingSourceColumn(
+                        embedding_model_endpoint_name=self.migration_assistant_embedding_model_name
+                        ,name="intent"
+                    )
+                ]
+            )
+
+        )
 
 

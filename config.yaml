@@ -11,28 +11,33 @@ DATABRICKS_HOST: FILL ME IN
 # The Vector Search endpoint which will host the index. Endpoint will be created if not found
 # and you have the correct permissions.
 # see here https://docs.databricks.com/en/generative-ai/vector-search.html#how-to-set-up-mosaic-ai-vector-search
-VECTOR_SEARCH_ENDPOINT_NAME: FILL ME IN # eg "gamma-vector-search-endpoint"
+VECTOR_SEARCH_ENDPOINT_NAME: "sql_migration_assistant_vs_endpoint"
 
 # the embedding model name. If not using one of the default Foundation Model APIs this model will need to be served.
 # if using foundation model pay per token API, this might be "databricks-gte-large-en"
 # otherwise you will need to serve an embedding model. Instructions here:
 # https://docs.databricks.com/en/machine-learning/model-serving/create-foundation-model-endpoints.html
 # Databricks provides a set of embedding models in the schema catalog.ai for easy hosting from Unity Catalog (the bge* models)
-EMBEDDING_MODEL_ENDPOINT: FILL ME IN
+EMBEDDING_MODEL_ENDPOINT_NAME: "sql_migration_assistant_bge_large_en_v1_5"
+
+# the path to the embedding model in the catalog. This is only used if an embedding model serving endpoint is created during setup.
+EMBEDDING_MODEL_UC_PATH: "system.ai.bge_large_en_v1_5"
+
+
 # the  name of the VS index to create. will be placed in the catalog and schema defined above
 # change if you don't like the default name
-VS_INDEX_FULLNAME : "gamma_code_intent_vs_index"
+VS_INDEX_NAME : "sql_migration_assistant_code_intent_vs_index"
 # the name of table to store the code intent. will be placed in the catalog and schema defined above
 # change if you don't like the default name
-VS_INTENT_TABLE: "gamma_code_intent_table"
+VS_INTENT_TABLE_NAME: "sql_migration_assistant_code_intent_table"
 
 ### UNITY CATALOG PARAMETERS
 # Unity Catalog catalog for storing tables.
 # Will be created if does not exist and you have CREATE CATALOG permission.
-CATALOG: FILL ME IN
+CATALOG: "main"
 # Unity Catalog schema for storing tables
 # Will be created if does not exist and you have CREATE SCHEMA permission in the catalog defined above.
-SCHEMA: 'gamma-migration-assistant'
+SCHEMA: 'sql-migration-assistant'
 
 ### SQL WAREHOUSE PARAMETERS
 # the http path from the connection details of a SQL Warehouse. This is retreived from the connection details of the SQL
