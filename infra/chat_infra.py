@@ -1,273 +1,129 @@
-from operator import itemgetter
-import mlflow
+import logging
+
 from mlflow.tracking import MlflowClient
 
 import os
 
-from utils.endpointclient import EndpointApiClient
+from databricks.sdk import WorkspaceClient
 
-from langchain_community.chat_models import ChatDatabricks
-from langchain_core.runnables import RunnableLambda,RunnableBranch,RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
-)
-from langchain.prompts import PromptTemplate
-from langchain_core.messages import HumanMessage, AIMessage
+from utils.uc_model_version import get_latest_model_version
 
-def create_langchain_chat_model():
-    # ## Enable MLflow Tracing
-    mlflow.login()
-    mlflow.langchain.autolog()
-    mlflow.set_registry_uri("databricks-uc")
-    ############
+class ChatInfra():
+    def __init__(self, config):
+        self.w = WorkspaceClient()
+        self.config = config
 
-    FOUNDATION_MODEL = os.environ.get("SERVED_FOUNDATION_MODEL_NAME")
-    experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME")
-    catalog = os.environ.get("CATALOG")
-    schema = os.environ.get("SCHEMA")
-    UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
-    fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
+        # get values from config file
+        self.migration_assistant_UC_catalog = self.config.get("CATALOG")
+        self.migration_assistant_UC_schema = self.config.get("SCHEMA")
 
-    # check if the model already exists and if so, return
-    client = MlflowClient()
-    model_version_infos = client.search_model_versions("name = '%s'" % fully_qualified_name)
-    if len(model_version_infos) > 0:
-        return
+        # these are updated as the user makes a choice about which UC catalog and schema to use.
+        # the chosen values are then written back into the config file.
+        self.foundation_llm_name = self.config.get("SERVED_FOUNDATION_MODEL_NAME")
+        self.use_guardrails = self.config.get("USE_GUARDRAILS")
 
-    # Helper functions
-    ############
-    # Return the string contents of the most recent message from the user
-    def extract_user_query_string(chat_messages_array):
-        return chat_messages_array[-1]["content"]
+        # user cannot change these values
+        self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
+        self.langchain_model_name = self.config.get('MLFLOW_MODEL_NAME')
+        self.provisioned_throughput_endpoint_name = self.config.get('PROVISIONED_THROUGHPUT_ENDPOINT_NAME')
 
-    # Extract system prompt from the messages
-
-    def extract_system_prompt_string(chat_messages_array):
-        return chat_messages_array[0]["content"]
-
-    # Return the chat history, which is everything before the last question
-    def extract_chat_history(chat_messages_array):
-        return chat_messages_array[1:-1]
-
-
-
-    ############
-    # Prompt Template for generation
-    ############
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (  # System prompt contains the instructions
-                "system",
-                "{system}",
-            ),
-            # If there is history, provide it.
-            # Note: This chain does not compress the history, so very long converastions can overflow the context window.
-            MessagesPlaceholder(variable_name="formatted_chat_history"),
-            # User's most current question
-            ("user", "{question}"),
+        # set of pay per token models that can be used
+        self.pay_per_token_models = [
+            "databricks-meta-llama-3-1-405b-instruct"
+            , "databricks-meta-llama-3-1-70b-instruct"
+            , "databricks-dbrx-instruct"
+            , "databricks-mixtral-8x7b-instruct"
         ]
-    )
-    is_question_about_sql_str = """
-    You are classifying Questions to know if this question is related to Databricks and SQL in general
+    def setup_foundation_model_infra(self):
+        """
+        This function sets up the foundation model infrastructure. If using pay per token, all that is necessary is to
+        choose the model. If using provisioned throughput, the user must choose a model from the system.ai catalog
+        and then a scale to zero enabled endpoint is created.
 
-    Question: Convert to Spark SQL SELECT * from table 1?
-    Expected Response: Yes
+        """
+        if self.use_guardrails:
+            pass
+        else:
+            # check if PPT exists
+            if self.pay_per_token_exists():
+                print("Would you like to use an existing pay per token endpoint? This is recommended for development and testing. "
+                      "The alternative is to create a Provisioned Throughput endpoint at greater cost. (y/n)")
+                choice = str(input())
+                if choice.lower() == "y":
+                    print("Choose a pay per token model:")
+                    for i, model in enumerate(self.pay_per_token_models):
+                        print(f"{i}: {model}")
+                    choice = int(input())
+                    self.foundation_llm_name = self.pay_per_token_models[choice]
+                    return
+            # create a provisioned throughput endpoint
+            print("Choose a foundation model to deploy:")
+            system_models = self._list_models_from_system_ai()
+            for i, model in enumerate(system_models):
+                print(f"{i}: {model.name}")
+            choice = int(input())
+            self.foundation_llm_name = system_models[choice].name
+            logging.info(f"Deploying provisioned throughput endpoint {self.provisioned_throughput_endpoint_name} serving"
+                         f" {self.foundation_llm_name}. This may take a few minutes.")
+            self._create_provisioned_throughput_endpoint(self.foundation_llm_name)
 
-    Question: Knowing this followup history: Convert to Spark SQL SELECT * from table 1?, classify this question: Summarize the query.
-    Expected Response: Yes
+    def pay_per_token_exists(self):
+        """
+        Check if the pay per token models exist in the workspace
+        """
+        endpoints = self.w.serving_endpoints.list()
+        endpoint_names = set([ep.name for ep in endpoints])
+        pay_per_token_exists = set(self.pay_per_token_models).issubset(endpoint_names)
+        return pay_per_token_exists
 
-    Only answer with "yes" or "no". 
+    def _create_provisioned_throughput_endpoint(self, model_name):
+        # SDK does not support creating PT endpoints yet. Use  APIs for now
+        # soure: https://databricks.slack.com/archives/C01KSAWFXG8/p1722990775775939
+        # this below is pinched from https://docs.databricks.com/en/machine-learning/foundation-models/deploy-prov-throughput-foundation-model-apis.html#create-your-provisioned-throughput-endpoint-using-the-rest-api
+        model_name=f"system.ai.{model_name}"
+        model_version = get_latest_model_version(model_name)
+        endpoint_name = self.provisioned_throughput_endpoint_name
+        optimizable_info = self.w.api_client.do(
+            method="get"
+            ,path=f"/api/2.0/serving-endpoints/get-model-optimization-info/{model_name}/{model_version}"
+        )
+        # this check should be unnecessary - but worth putting in just in case
+        if 'optimizable' not in optimizable_info or not optimizable_info['optimizable']:
+          raise ValueError("Model is not eligible for provisioned throughput")
 
-    Knowing this followup history:"""
-
-    is_question_relevant_prompt = ChatPromptTemplate.from_messages(
-        [
-            (  # System prompt contains the instructions
-                "system",
-                is_question_about_sql_str,
-            ),
-            # If there is history, provide it.
-            # Note: This chain does not compress the history, so very long converastions can overflow the context window.
-            MessagesPlaceholder(variable_name="formatted_chat_history"),
-            # User's most current question
-            ("user", "classify this question: {question}"),
-        ]
-    )
-
-
-    # Format the converastion history to fit into the prompt template above.
-    def format_chat_history_for_prompt(chat_messages_array):
-        history = extract_chat_history(chat_messages_array)
-        formatted_chat_history = []
-        if len(history) > 0:
-            for chat_message in history:
-                if chat_message["role"] == "user":
-                    formatted_chat_history.append(
-                        HumanMessage(content=chat_message["content"])
-                    )
-                elif chat_message["role"] == "assistant":
-                    formatted_chat_history.append(
-                        AIMessage(content=chat_message["content"])
-                    )
-        return formatted_chat_history
-
-
-    ############
-    # FM for generation
-    ############
-    model = ChatDatabricks(endpoint=FOUNDATION_MODEL)
-
-
-    ############
-    # Guard Rail chain
-    ############
-
-
-
-    ############
-    # RAG Chain
-    ############
-    is_question_about_sql_chain = (
-        {
-            "question": itemgetter("messages") | RunnableLambda(extract_user_query_string),
-            "formatted_chat_history": itemgetter("messages") | RunnableLambda(extract_chat_history),
-        }
-        | is_question_relevant_prompt
-        | model
-        | StrOutputParser())
-
-    irrelevant_question_chain =  (
-    RunnableLambda(lambda x:{
-    "id": "null",
-    "object": "mock.chat.completion",
-    "created": 1722193932,
-    "model": "irrelevant_call",
-    "choices": [
-        {
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": "I cannot answer questions that are not about Databricks or Spark SQL"
-            },
-            "finish_reason": "Standard response"
-        }
-    ],
-    "usage": {
-        "prompt_tokens": 0,
-        "completion_tokens": 0,
-        "total_tokens": 0
-    }
-
-} ))
-
-    chain = (
-        RunnablePassthrough() |
-        {
-            "system": itemgetter("system") ,
-            "question": itemgetter("question") ,
-            "formatted_chat_history": itemgetter("chat_history") 
-        }
-        | prompt
-        | model
-        | StrOutputParser()
-    )
-
-    branch_node = RunnableBranch(
-        (lambda x: "yes" in x["question_is_relevant"].lower(), RunnablePassthrough() |chain),
-        (lambda x: "no" in x["question_is_relevant"].lower(), irrelevant_question_chain),
-        irrelevant_question_chain)
-
-    full_chain = (
-    {
-        "question_is_relevant": is_question_about_sql_chain,
-        "question": itemgetter("messages") | RunnableLambda(extract_user_query_string),
-        "system": itemgetter("messages") | RunnableLambda(extract_system_prompt_string),
-        "chat_history": itemgetter("messages") | RunnableLambda(format_chat_history_for_prompt),    
-    }
-    | branch_node
-    )
-
-
-
-    mlflow.models.set_model(model=full_chain)
-
-    # Log the model to MLflow
-    try:
-        mlflow.create_experiment(experiment_name)
-        mlflow.set_experiment(experiment_name)
-    except:
-        mlflow.set_experiment(experiment_name)
-    with mlflow.start_run():
-        logged_chain_info = mlflow.langchain.log_model(
-            lc_model=full_chain
-            ,artifact_path="chain"  # Required by MLflow
-            ,input_example=  {"messages": [
-                            {
-                                "role": "System",
-                                "content": "You are a helpful assistant",
-                            },
-                            {
-                                "role": "user",
-                                "content": "What is RAG?",
-                            },
-                        ]
+        chunk_size = optimizable_info['throughput_chunk_size']
+        # Maximum desired provisioned throughput
+        max_provisioned_throughput = 2 * chunk_size
+        self.w.api_client.do(
+            method="post"
+            ,path=f"/api/2.0/serving-endpoints"
+            ,body={
+                "name": endpoint_name,
+                "config":{
+                    "served_entities": [
+                        {
+                            "entity_name": model_name,
+                            "entity_version": model_version,
+                            "scale_to_zero_enabled": True,
+                            "min_provisioned_throughput": 0,
+                            "max_provisioned_throughput": max_provisioned_throughput,
+                            #"envrionment_vars": {"ENABLE_MLFLOW_TRACING": True}
+                        }
+                    ]
+                    , "auto_capture_config": {
+                        "catalog_name": self.migration_assistant_UC_catalog,
+                        "schema_name": self.migration_assistant_UC_schema,
+                        "table_name_prefix": endpoint_name,
+                        "enabled": True
                     }
+                }
+            }
         )
 
-    mlflow.set_registry_uri('databricks-uc')
 
-    # Register the model
-    uc_registered_model_info = mlflow.register_model(model_uri=logged_chain_info.model_uri, name=fully_qualified_name)
 
-def setup_chat_infra():
+    def _list_models_from_system_ai(self):
+        system_models = self.w.registered_models.list(catalog_name="system", schema_name="ai")
+        instruct_system_models = [model for model in system_models if "instruct" in model.name]
+        return instruct_system_models
 
-    catalog = os.environ.get("CATALOG")
-    schema = os.environ.get("SCHEMA")
-    UC_MODEL_NAME = os.environ.get("MLFLOW_MODEL_NAME")
-    DATABRICKS_TOKEN_SECRET_SCOPE = os.environ.get("DATABRICKS_TOKEN_SECRET_SCOPE")
-    DATABRICKS_TOKEN_SECRET_KEY = os.environ.get("DATABRICKS_TOKEN_SECRET_KEY")
-    serving_endpoint_name = os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME")
-    fully_qualified_name = f"{catalog}.{schema}.{UC_MODEL_NAME}"
-    DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
-
-    serving_client = EndpointApiClient()
-    if serving_client.inference_endpoint_exists(serving_endpoint_name):
-        return None
-    # Get the latest model version
-    client = MlflowClient()
-    def get_latest_model_version(model_name):
-      client = MlflowClient()
-      model_version_infos = client.search_model_versions("name = '%s'" % model_name)
-      return max([int(model_version_info.version) for model_version_info in model_version_infos]) or 1
-
-    latest_version = get_latest_model_version(model_name=fully_qualified_name)
-    latest_model = client.get_model_version(fully_qualified_name,latest_version)
-
-    #TODO: use the sdk once model serving is available.
-
-    # Start the endpoint using the REST API (you can do it using the UI directly)
-    auto_capture_config = {
-        "catalog_name": catalog,
-        "schema_name": schema,
-        "table_name_prefix": serving_endpoint_name
-        }
-    environment_vars={
-        "DATABRICKS_TOKEN": f"{{{{secrets/{DATABRICKS_TOKEN_SECRET_SCOPE}/{DATABRICKS_TOKEN_SECRET_KEY}}}}}"
-        ,"DATABRICKS_HOST": DATABRICKS_HOST
-        ,"ENABLE_MLFLOW_TRACING": "true"
-    }
-
-    # TODO - add in check to see if tracing tables exist and error if they do. Cannot create an endpoint if the
-    #  tables already exist.
-    serving_client.create_endpoint_if_not_exists(
-            serving_endpoint_name
-            , model_name=fully_qualified_name
-            , model_version = latest_model.version
-            , workload_size="Small"
-            , scale_to_zero_enabled=True
-            , wait_start = True
-            , auto_capture_config=auto_capture_config
-            , environment_vars=environment_vars
-        )

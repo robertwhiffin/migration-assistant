@@ -29,7 +29,7 @@ EMBEDDING_MODEL_UC_PATH: "system.ai.bge_large_en_v1_5"
 VS_INDEX_NAME : "sql_migration_assistant_code_intent_vs_index"
 # the name of table to store the code intent. will be placed in the catalog and schema defined above
 # change if you don't like the default name
-VS_INTENT_TABLE_NAME: "sql_migration_assistant_code_intent_table"
+CODE_INTENT_TABLE_NAME: "sql_migration_assistant_code_intent_table"
 
 ### UNITY CATALOG PARAMETERS
 # Unity Catalog catalog for storing tables.
@@ -44,7 +44,7 @@ SCHEMA: 'sql-migration-assistant'
 # warehouse page in the Databricks workspace.
 # eg "/sql/1.0/warehouses/d1184b8c2a8a87eb"
 SQL_WAREHOUSE_HTTP_PATH: FILL ME IN
-
+DEFAULT_SQL_WAREHOUSE_NAME: "sql_migration_assistant_warehouse"
 ### CHATBOT PARAMETERS
 # The foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).
 # If not using one of the default Foundation Model APIs this model will need to be served.
@@ -54,6 +54,7 @@ SQL_WAREHOUSE_HTTP_PATH: FILL ME IN
 # Databricks provides a set of foundation models in the schema catalog.ai for easy hosting from Unity Catalog.
 # You need to serve a model ending in -instruct.
 SERVED_FOUNDATION_MODEL_NAME: FILL ME IN
+USE_GUARDRAILS: False
 # how many tokens is the model allowed to generate.
 # Default value.
 MAX_TOKENS: 4096
@@ -63,7 +64,8 @@ MAX_TOKENS: 4096
 MLFLOW_EXPERIMENT_NAME: FILL ME IN
 # mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
 # change if you don't like the default name
-MLFLOW_MODEL_NAME: "gamma-chain"
+MLFLOW_MODEL_NAME: "migration-assistant-chain"
 # the CPU endpoint to serve the langchain model. Will be created if not found.
 # change if you don't like the default name
 LANGCHAIN_SERVING_ENDPOINT_NAME: "project-gamma-endpoint"
+PROVISIONED_THROUGHPUT_ENDPOINT_NAME: "migration_assistant_endpoint"

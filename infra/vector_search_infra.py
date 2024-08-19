@@ -3,10 +3,7 @@ from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntity
 from databricks.sdk.service.vectorsearch import EndpointType, DeltaSyncVectorIndexSpecRequest, PipelineType, EmbeddingSourceColumn, VectorIndexType
 
 import logging
-import mlflow
-from mlflow.tracking import MlflowClient
-
-
+from utils.uc_model_version import get_latest_model_version
 
 
 class VectorSearchInfra():
@@ -27,7 +24,7 @@ class VectorSearchInfra():
 
         # these are not configurable by the end user
         self.migration_assistant_VS_index = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('VS_INDEX_NAME')}"
-        self.migration_assistant_VS_table = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('VS_INTENT_TABLE_NAME')}"
+        self.migration_assistant_VS_table = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('CODE_INTENT_TABLE_NAME')}"
 
 
     def choose_VS_endpoint(self):
@@ -79,12 +76,7 @@ class VectorSearchInfra():
             self.config['EMBEDDING_MODEL_ENDPOINT_NAME'] = self.migration_assistant_embedding_model_name
 
     def create_embedding_model_endpoint(self):
-        def get_latest_model_version(model_name):
-            # need this to get the model version from UC as it's not available directly
-            mlflow.set_registry_uri("databricks-uc")
-            client = MlflowClient()
-            model_version_infos = client.search_model_versions("name = '%s'" % model_name)
-            return max([int(model_version_info.version) for model_version_info in model_version_infos]) or 1
+
 
         latest_version = get_latest_model_version(model_name=self.default_embedding_model_UC_path)
         latest_version = str(latest_version)
