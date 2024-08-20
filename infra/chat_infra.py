@@ -50,6 +50,7 @@ class ChatInfra():
                     print(f"{i}: {model}")
                 choice = int(input())
                 self.foundation_llm_name = self.pay_per_token_models[choice]
+                self.config['SERVED_FOUNDATION_MODEL_NAME'] = self.foundation_llm_name
                 return
         # create a provisioned throughput endpoint
         print("Choose a foundation model to deploy:")

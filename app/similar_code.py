@@ -25,7 +25,7 @@ class SimilarCode():
     def get_similar_code(self, chat_history):
         intent=chat_history[-1][1]
         results = self.w.vector_search_indexes.query_index(
-            index_name=self.vs_index_name,
+            index_name=f"{self.catalog}.{self.schema}.{self.vs_index_name}",
             columns=["code", "intent"],
             query_text=intent,
             num_results=1
