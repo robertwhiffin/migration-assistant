@@ -28,6 +28,8 @@ def setup_migration_assistant():
     logging.info("Setting up Chat infrastructure")
     chat_infra = ChatInfra(config)
     chat_infra.setup_foundation_model_infra()
+    config=chat_infra.config
+    logging.info("Setting up secrets")
     secrets_infra = SecretsInfra(config)
     secrets_infra.create_secret_PAT()
     return secrets_infra.config

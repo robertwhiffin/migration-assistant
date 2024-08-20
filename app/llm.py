@@ -12,11 +12,10 @@ messages=[
 
 
 class LLMCalls():
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, foundation_llm_name, max_tokens):
         self.w = WorkspaceClient()
-        self.foundation_llm_name = self.config.get("SERVED_FOUNDATION_MODEL_NAME")
-        self.max_tokens = int(config.get("MAX_TOKENS"))
+        self.foundation_llm_name = foundation_llm_name
+        self.max_tokens = int(max_tokens)
 
 
     def call_llm(self, messages):
@@ -69,7 +68,6 @@ class LLMCalls():
         # Also removes the 'sql' prefix always added by the LLM.
         translation = llm_answer#.split("Final answer:\n")[1].replace(">>", "").replace("<<", "")
         return translation
-
 
     def llm_chat(self, system_prompt, query, chat_history):
         messages = self.convert_chat_to_llm_input(system_prompt, chat_history)

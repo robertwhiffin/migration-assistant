@@ -14,30 +14,28 @@ logger.setLevel(logging.DEBUG)
 
 
 # # personal access token necessary for authenticating API requests. Stored using a secret
-DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN")
-DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST")
-MODEL_NAME = os.environ.get("SERVED_FOUNDATION_MODEL_NAME")
+
+FOUNDATION_MODEL_NAME = os.environ.get("SERVED_FOUNDATION_MODEL_NAME")
 MAX_TOKENS = os.environ.get("MAX_TOKENS")
-SQL_WAREHOUSE_HTTP_PATH = os.environ.get("SQL_WAREHOUSE_HTTP_PATH")
+SQL_WAREHOUSE_ID = os.environ.get("SQL_WAREHOUSE_ID")
 VECTOR_SEARCH_ENDPOINT_NAME = os.environ.get("VECTOR_SEARCH_ENDPOINT_NAME")
-VS_INDEX_FULLNAME = os.environ.get("VS_INDEX_FULLNAME")
-INTENT_TABLE = os.environ.get("VS_INTENT_TABLE")
+VS_INDEX_NAME = os.environ.get("VS_INDEX_NAME")
+CODE_INTENT_TABLE_NAME = os.environ.get("CODE_INTENT_TABLE_NAME")
 CATALOG = os.environ.get("CATALOG")
 SCHEMA = os.environ.get("SCHEMA")
 
 
-sql_interface = SQLInterface(DATABRICKS_HOST, DATABRICKS_TOKEN, SQL_WAREHOUSE_HTTP_PATH)
-translation_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN,MODEL_NAME,MAX_TOKENS)
-intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
-intent_llm = LLMCalls(DATABRICKS_HOST, DATABRICKS_TOKEN, MODEL_NAME, MAX_TOKENS)
+
+translation_llm = LLMCalls(foundation_llm_name=FOUNDATION_MODEL_NAME, max_tokens=MAX_TOKENS)
+intent_llm = LLMCalls(foundation_llm_name=FOUNDATION_MODEL_NAME, max_tokens=MAX_TOKENS)
 similar_code_helper = SimilarCode(
-      DATABRICKS_TOKEN
-    , DATABRICKS_HOST
-    , VECTOR_SEARCH_ENDPOINT_NAME
-    , VS_INDEX_FULLNAME
-    , CATALOG
-    , SCHEMA
-    , INTENT_TABLE
+    catalog=CATALOG,
+    schema=SCHEMA,
+    code_intent_table_name=CODE_INTENT_TABLE_NAME,
+    VS_index_name=VS_INDEX_NAME,
+    VS_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME,
+    sql_warehouse_id=SQL_WAREHOUSE_ID
+
 )
 
 ################################################################################
@@ -209,7 +207,8 @@ ORDER BY
                     
                     Intent is determined by an LLM which uses the code and table & column metadata. 
 
-                    ***If the intent is incorrect, please edit***. Once you are happy that the description is correct, please click the button below to save the intent. This will help the Department by making it easier to identify duplication of what people are doing. 
+                    ***If the intent is incorrect, please edit***. Once you are happy that the description is correct, please click the button below to save the intent.
+                     
                     """)
         # a box to give the LLM generated intent of the code. This is editable as well. 
         explain_button = gr.Button("Explain code intent using AI.")
@@ -288,7 +287,7 @@ ORDER BY
 
     def save_intent_wrapper(input_code, explained):
         gr.Info("Saving intent")
-        similar_code_helper.save_intent(input_code, explained, sql_interface.cursor)
+        similar_code_helper.save_intent(input_code, explained)
         gr.Info("Intent saved")
 
     submit.click(

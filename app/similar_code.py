@@ -2,32 +2,30 @@ from databricks.sdk import WorkspaceClient
 
 class SimilarCode():
 
-    def __init__(self, config):
+    def __init__(self, catalog, schema, code_intent_table_name, VS_index_name, VS_endpoint_name, sql_warehouse_id):
         self.w = WorkspaceClient()
-        self.config = config
 
-        self.migration_assistant_UC_catalog = self.config.get("CATALOG")
-        self.migration_assistant_UC_schema = self.config.get("SCHEMA")
+        self.warehouseID = sql_warehouse_id
+        self.catalog = catalog
+        self.schema = schema
+        self.code_intent_table_name = code_intent_table_name
+        self.vs_index_name = VS_index_name
+        self.vs_endpoint_name = VS_endpoint_name
 
-        self.migration_assistant_VS_table = self.config.get('CODE_INTENT_TABLE_NAME')
-        self.migration_assistant_VS_index = self.config.get('VS_INDEX_NAME')
-        self.default_VS_endpoint_name = self.config.get("VECTOR_SEARCH_ENDPOINT_NAME")
-
-        self.warehouseID = self.config.get('DEFAULT_SQL_WAREHOUSE_ID')
-    def save_intent(self, code, intent, cursor):
+    def save_intent(self, code, intent):
         code_hash = hash(code)
 
         _ = self.w.statement_execution.execute_statement(
             warehouse_id=self.warehouseID,
-            catalog=self.migration_assistant_UC_catalog,
-            schema=self.migration_assistant_UC_schema,
-            statement=f"INSERT INTO {self.migration_assistant_VS_table} VALUES ({code_hash}, \"{code}\", \"{intent}\")"
+            catalog=self.catalog,
+            schema=self.schema,
+            statement=f"INSERT INTO {self.code_intent_table_name} VALUES ({code_hash}, \"{code}\", \"{intent}\")"
         )
 
     def get_similar_code(self, chat_history):
         intent=chat_history[-1][1]
         results = self.w.vector_search_indexes.query_index(
-            index_name=self.migration_assistant_VS_index,
+            index_name=self.vs_index_name,
             columns=["code", "intent"],
             query_text=intent,
             num_results=1
