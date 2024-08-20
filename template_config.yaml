@@ -1,11 +1,11 @@
 ###### Configuration file for the migration assistant ######
 ### DATABRICKS WORKSPACE PARAMETERS
 # The scope where the PAT is stored
-DATABRICKS_TOKEN_SECRET_SCOPE: FILL ME IN
+DATABRICKS_TOKEN_SECRET_SCOPE: null
 # The key underwhich the PAT is stored
-DATABRICKS_TOKEN_SECRET_KEY: FILL ME IN
+DATABRICKS_TOKEN_SECRET_KEY: null
 # hostname of the databricks workspaces, eg "https://adb-1231234132.12.azuredatabricks.net" - DO NOT PUT A TRAILING /
-DATABRICKS_HOST: FILL ME IN
+DATABRICKS_HOST: null
 
 ### VECTOR SEARCH PARAMETERS
 # The Vector Search endpoint which will host the index. Endpoint will be created if not found
@@ -43,8 +43,8 @@ SCHEMA: 'sql-migration-assistant'
 # the http path from the connection details of a SQL Warehouse. This is retreived from the connection details of the SQL
 # warehouse page in the Databricks workspace.
 # eg "/sql/1.0/warehouses/d1184b8c2a8a87eb"
-DEFAULT_SQL_WAREHOUSE_ID:
-DEFAULT_SQL_WAREHOUSE_NAME: "sql_migration_assistant_warehouse"
+SQL_WAREHOUSE_ID: null
+SQL_WAREHOUSE_NAME: "sql_migration_assistant_warehouse"
 ### CHATBOT PARAMETERS
 # The foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).
 # If not using one of the default Foundation Model APIs this model will need to be served.
@@ -53,19 +53,10 @@ DEFAULT_SQL_WAREHOUSE_NAME: "sql_migration_assistant_warehouse"
 # https://docs.databricks.com/en/machine-learning/model-serving/create-foundation-model-endpoints.html
 # Databricks provides a set of foundation models in the schema catalog.ai for easy hosting from Unity Catalog.
 # You need to serve a model ending in -instruct.
-SERVED_FOUNDATION_MODEL_NAME: FILL ME IN
-USE_GUARDRAILS: False
+SERVED_FOUNDATION_MODEL_NAME: null
 # how many tokens is the model allowed to generate.
 # Default value.
 MAX_TOKENS: 4096
-# mlflow experiment name for tracing and logging Replace with your own Databricks user name - experiments must be
-# saved in the /Users folder of the workspace and will error if not.
-# eg "/Users/<user name>/databricks-project-gamma"
-MLFLOW_EXPERIMENT_NAME: FILL ME IN
-# mlflow model name. Will be concatenated with the below catalog and schema to create the full model name
-# change if you don't like the default name
-MLFLOW_MODEL_NAME: "migration-assistant-chain"
 # the CPU endpoint to serve the langchain model. Will be created if not found.
 # change if you don't like the default name
-LANGCHAIN_SERVING_ENDPOINT_NAME: "project-gamma-endpoint"
 PROVISIONED_THROUGHPUT_ENDPOINT_NAME: "migration_assistant_endpoint"

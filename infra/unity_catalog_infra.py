@@ -1,5 +1,6 @@
+import databricks.sdk.errors.platform
 from databricks.sdk import WorkspaceClient
-
+from databricks.sdk.errors.platform import BadRequest
 import logging
 import time
 
@@ -29,7 +30,7 @@ class UnityCatalogInfra():
 
         # user cannot change these values
         self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
-        self.warehouseID = self.config.get('DEFAULT_SQL_WAREHOUSE_ID')
+        self.warehouseID = self.config.get('SQL_WAREHOUSE_ID')
 
     def choose_UC_catalog(self):
         '''Ask the user to choose an existing Unity Catalog or create a new one.
@@ -75,7 +76,11 @@ class UnityCatalogInfra():
                     print("Schema name cannot include period, space, or forward-slash.")
         # update config with user choice
         self.config['SCHEMA'] = self.migration_assistant_UC_schema
-        self._create_UC_schema()
+        try:
+            self._create_UC_schema()
+        except BadRequest as e:
+            if "already exists" in str(e):
+                print(f"Schema already exists. Using existing schema {self.migration_assistant_UC_schema}.")
 
     def _create_UC_catalog(self):
         '''Create a new Unity Catalog.

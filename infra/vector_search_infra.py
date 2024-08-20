@@ -1,6 +1,7 @@
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput
 from databricks.sdk.service.vectorsearch import EndpointType, DeltaSyncVectorIndexSpecRequest, PipelineType, EmbeddingSourceColumn, VectorIndexType
+from databricks.sdk.errors.platform import ResourceAlreadyExists
 
 import logging
 from utils.uc_model_version import get_latest_model_version
@@ -46,7 +47,7 @@ class VectorSearchInfra():
             logging.info(f"Creating new VS endpoint {self.migration_assistant_VS_endpoint}."
                          f"This will take a few minutes."
                          f"Check status here: {self.w.config.host}/compute/vector-search/{self.migration_assistant_VS_endpoint}")
-            self.create_VS_endpoint()
+            self._create_VS_endpoint()
         else:
             self.migration_assistant_VS_endpoint = endpoints[choice].name
             # update config with user choice
@@ -70,12 +71,13 @@ class VectorSearchInfra():
             logging.info(f"Creating new model serving endpoint {self.migration_assistant_embedding_model_name}. "
                          f"This will take a few minutes."
                          f"Check status here: {self.w.config.host}/ml/endpoints/{self.migration_assistant_embedding_model_name}")
-            self.create_embedding_model_endpoint()
+            self._create_embedding_model_endpoint()
         else:
             self.migration_assistant_embedding_model_name = endpoints[choice].name
+            # update config with user choice
             self.config['EMBEDDING_MODEL_ENDPOINT_NAME'] = self.migration_assistant_embedding_model_name
 
-    def create_embedding_model_endpoint(self):
+    def _create_embedding_model_endpoint(self):
 
 
         latest_version = get_latest_model_version(model_name=self.default_embedding_model_UC_path)
@@ -98,29 +100,33 @@ class VectorSearchInfra():
             )
         )
 
-    def create_VS_endpoint(self):
+    def _create_VS_endpoint(self):
         self.w.vector_search_endpoints.create_endpoint(
             name = self.migration_assistant_VS_endpoint,
             endpoint_type = EndpointType.STANDARD
         )
 
     def create_VS_index(self):
-        self.w.vector_search_indexes.create_index(
-            name=self.migration_assistant_VS_index
-            ,endpoint_name=self.migration_assistant_VS_endpoint
-            ,primary_key="id"
-            ,index_type=VectorIndexType.DELTA_SYNC
-            ,delta_sync_index_spec=DeltaSyncVectorIndexSpecRequest(
-                source_table=self.migration_assistant_VS_table
-                ,pipeline_type=PipelineType.TRIGGERED
-                ,embedding_source_columns=[
-                    EmbeddingSourceColumn(
-                        embedding_model_endpoint_name=self.migration_assistant_embedding_model_name
-                        ,name="intent"
-                    )
-                ]
-            )
+        try:
+            self.w.vector_search_indexes.create_index(
+                name=self.migration_assistant_VS_index
+                ,endpoint_name=self.migration_assistant_VS_endpoint
+                ,primary_key="id"
+                ,index_type=VectorIndexType.DELTA_SYNC
+                ,delta_sync_index_spec=DeltaSyncVectorIndexSpecRequest(
+                    source_table=self.migration_assistant_VS_table
+                    ,pipeline_type=PipelineType.TRIGGERED
+                    ,embedding_source_columns=[
+                        EmbeddingSourceColumn(
+                            embedding_model_endpoint_name=self.migration_assistant_embedding_model_name
+                            ,name="intent"
+                        )
+                    ]
+                )
 
-        )
+            )
+        except ResourceAlreadyExists as e:
+            logging.info(f"Index {self.migration_assistant_VS_index} already exists. Using existing index.")
+
 
 

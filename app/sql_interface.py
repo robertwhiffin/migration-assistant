@@ -40,7 +40,7 @@ class SQLInterface():
             warehouseID = _.id
         else:
             warehouseID = warehouses[choice].id
-        self.default_sql_warehouse_id = warehouseID
+        self.warehouseID = warehouseID
 
 
 

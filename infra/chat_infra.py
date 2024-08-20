@@ -16,11 +16,9 @@ class ChatInfra():
         # these are updated as the user makes a choice about which UC catalog and schema to use.
         # the chosen values are then written back into the config file.
         self.foundation_llm_name = self.config.get("SERVED_FOUNDATION_MODEL_NAME")
-        self.use_guardrails = self.config.get("USE_GUARDRAILS")
 
         # user cannot change these values
         self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
-        self.langchain_model_name = self.config.get('MLFLOW_MODEL_NAME')
         self.provisioned_throughput_endpoint_name = self.config.get('PROVISIONED_THROUGHPUT_ENDPOINT_NAME')
 
         # set of pay per token models that can be used
@@ -37,34 +35,33 @@ class ChatInfra():
         and then a scale to zero enabled endpoint is created.
 
         """
-        if self.use_guardrails:
-            pass
-        else:
-            # check if PPT exists
-            if self.pay_per_token_exists():
-                print("Would you like to use an existing pay per token endpoint? This is recommended for quick testing."
-                      "The alternative is to create a Provisioned Throughput endpoint, which enables monitoring of"
-                      "the requests and responses made to the LLM via inference tables. (y/n)")
-                choice = str(input())
-                if choice.lower() == "y":
-                    print("Choose a pay per token model:")
-                    for i, model in enumerate(self.pay_per_token_models):
-                        print(f"{i}: {model}")
-                    choice = int(input())
-                    self.foundation_llm_name = self.pay_per_token_models[choice]
-                    return
-            # create a provisioned throughput endpoint
-            print("Choose a foundation model to deploy:")
-            system_models = self._list_models_from_system_ai()
-            for i, model in enumerate(system_models):
-                print(f"{i}: {model.name}")
-            choice = int(input())
-            self.foundation_llm_name = system_models[choice].name
-            logging.info(f"Deploying provisioned throughput endpoint {self.provisioned_throughput_endpoint_name} serving"
-                         f" {self.foundation_llm_name}. This may take a few minutes.")
-            self._create_provisioned_throughput_endpoint(self.foundation_llm_name)
+        # check if PPT exists
+        if self._pay_per_token_exists():
+            print("Would you like to use an existing pay per token endpoint? This is recommended for quick testing. "
+                  "The alternative is to create a Provisioned Throughput endpoint, which enables monitoring of "
+                  "the requests and responses made to the LLM via inference tables. (y/n)")
+            choice = str(input())
+            if choice.lower() == "y":
+                print("Choose a pay per token model:")
+                for i, model in enumerate(self.pay_per_token_models):
+                    print(f"{i}: {model}")
+                choice = int(input())
+                self.foundation_llm_name = self.pay_per_token_models[choice]
+                return
+        # create a provisioned throughput endpoint
+        print("Choose a foundation model to deploy:")
+        system_models = self._list_models_from_system_ai()
+        for i, model in enumerate(system_models):
+            print(f"{i}: {model.name}")
+        choice = int(input())
+        self.foundation_llm_name = system_models[choice].name
+        logging.info(f"Deploying provisioned throughput endpoint {self.provisioned_throughput_endpoint_name} serving"
+                     f" {self.foundation_llm_name}. This may take a few minutes.")
+        self._create_provisioned_throughput_endpoint(self.foundation_llm_name)
+        # update config with user choice
+        self.config['SERVED_FOUNDATION_MODEL_NAME'] = self.foundation_llm_name
 
-    def pay_per_token_exists(self):
+    def _pay_per_token_exists(self):
         """
         Check if the pay per token models exist in the workspace
         """

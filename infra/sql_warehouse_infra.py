@@ -2,14 +2,14 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.sql import CreateWarehouseRequestWarehouseType
 
 
-class SQLInterface():
+class SqlWarehouseInfra():
 
     def __init__(self, config):
 
         self.config = config
         self.w = WorkspaceClient()
-        self.default_sql_warehouse_name = self.config.get('DEFAULT_SQL_WAREHOUSE_NAME')
-        self.warehouseID = self.config.get('DEFAULT_SQL_WAREHOUSE_ID')
+        self.default_sql_warehouse_name = self.config.get('SQL_WAREHOUSE_NAME')
+        self.warehouseID = self.config.get('SQL_WAREHOUSE_ID')
 
 
     def choose_compute(self):
@@ -40,7 +40,7 @@ class SQLInterface():
             warehouseID = _.id
         else:
             warehouseID = warehouses[choice].id
-        self.default_sql_warehouse_id = warehouseID
-
+        # update config with user choice
+        self.config['SQL_WAREHOUSE_ID'] = warehouseID
 
 
