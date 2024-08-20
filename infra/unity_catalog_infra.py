@@ -20,8 +20,8 @@ class UnityCatalogInfra():
         self.config = config
 
         # get defaults from config file
-        self.default_UC_catalog = "sql-migration-assistant"
-        self.default_UC_schema = "sql-migration-assistant"
+        self.default_UC_catalog = "sql_migration_assistant"
+        self.default_UC_schema = "sql_migration_assistant"
 
         # these are updated as the user makes a choice about which UC catalog and schema to use.
         # the chosen values are then written back into the config file.
