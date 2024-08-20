@@ -10,7 +10,7 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-from utils.initialsetup import setup_gamma
+from utils.initialsetup import setup_migration_assistant
 from utils.runindatabricks import run_app
-setup_gamma()
+setup_migration_assistant()
 run_app()

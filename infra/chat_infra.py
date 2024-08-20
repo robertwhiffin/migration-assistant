@@ -15,11 +15,11 @@ class ChatInfra():
 
         # these are updated as the user makes a choice about which UC catalog and schema to use.
         # the chosen values are then written back into the config file.
-        self.foundation_llm_name = self.config.get("SERVED_FOUNDATION_MODEL_NAME")
+        self.foundation_llm_name = None
 
         # user cannot change these values
         self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
-        self.provisioned_throughput_endpoint_name = self.config.get('PROVISIONED_THROUGHPUT_ENDPOINT_NAME')
+        self.provisioned_throughput_endpoint_name = "migration_assistant_endpoint"
 
         # set of pay per token models that can be used
         self.pay_per_token_models = [
@@ -28,6 +28,9 @@ class ChatInfra():
             , "databricks-dbrx-instruct"
             , "databricks-mixtral-8x7b-instruct"
         ]
+
+        #set config with max tokens
+        self.config['MAX_TOKENS'] = 4000
     def setup_foundation_model_infra(self):
         """
         This function sets up the foundation model infrastructure. If using pay per token, all that is necessary is to
@@ -60,6 +63,7 @@ class ChatInfra():
         self._create_provisioned_throughput_endpoint(self.foundation_llm_name)
         # update config with user choice
         self.config['SERVED_FOUNDATION_MODEL_NAME'] = self.foundation_llm_name
+        self.config['PROVISIONED_THROUGHPUT_ENDPOINT_NAME'] = self.provisioned_throughput_endpoint_name
 
     def _pay_per_token_exists(self):
         """

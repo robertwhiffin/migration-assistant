@@ -13,20 +13,28 @@ class VectorSearchInfra():
 
         self.config = config
 
-        # get defaults from config file
-        self.default_VS_endpoint_name = self.config.get("VECTOR_SEARCH_ENDPOINT_NAME")
-        self.default_embedding_endpoint_name = self.config.get("EMBEDDING_MODEL_ENDPOINT_NAME")
-        self.default_embedding_model_UC_path = self.config.get("EMBEDDING_MODEL_UC_PATH")
+        # set defaults for user to override if they choose
+        self.default_VS_endpoint_name = "sql_migration_assistant_vs_endpoint"
+        self.default_embedding_endpoint_name = "sql_migration_assistant_bge_large_en_v1_5"
+        self.default_embedding_model_UC_path = "system.ai.bge_large_en_v1_5"
 
         # these are updated as the user makes a choice about which VS endpoint and embedding model to use.
         # the chosen values are then written back into the config file.
         self.migration_assistant_VS_endpoint = None
         self.migration_assistant_embedding_model_name = None
 
-        # these are not configurable by the end user
-        self.migration_assistant_VS_index = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('VS_INDEX_NAME')}"
-        self.migration_assistant_VS_table = f"{self.config.get('CATALOG')}.{self.config.get('SCHEMA')}.{self.config.get('CODE_INTENT_TABLE_NAME')}"
 
+
+        # these are not configurable by the end user
+        self.catalog = self.config.get('CATALOG')
+        self.schema = self.config.get('SCHEMA')
+        self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
+        self.vs_index_name = self.code_intent_table_name + "_vs_index"
+        self.migration_assistant_VS_index = f"{self.catalog}.{self.schema}.{self.vs_index_name}"
+        self.migration_assistant_VS_table = f"{self.catalog}.{self.schema}.{self.code_intent_table_name}"
+
+        # update config with vs index name
+        self.config['VS_INDEX_NAME'] = self.vs_index_name
 
     def choose_VS_endpoint(self):
         '''Ask the user to choose an existing vector search endpoint or create a new one.

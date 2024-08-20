@@ -20,8 +20,8 @@ class UnityCatalogInfra():
         self.config = config
 
         # get defaults from config file
-        self.default_UC_catalog = self.config.get("CATALOG")
-        self.default_UC_schema = self.config.get("SCHEMA")
+        self.default_UC_catalog = "sql-migration-assistant"
+        self.default_UC_schema = "sql-migration-assistant"
 
         # these are updated as the user makes a choice about which UC catalog and schema to use.
         # the chosen values are then written back into the config file.
@@ -29,8 +29,11 @@ class UnityCatalogInfra():
         self.migration_assistant_UC_schema = None
 
         # user cannot change these values
-        self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
+        self.code_intent_table_name = "sql_migration_assistant_code_intent_table"
         self.warehouseID = self.config.get('SQL_WAREHOUSE_ID')
+
+        # add code intent table name to config
+        self.config["CODE_INTENT_TABLE_NAME"] = self.code_intent_table_name
 
     def choose_UC_catalog(self):
         '''Ask the user to choose an existing Unity Catalog or create a new one.

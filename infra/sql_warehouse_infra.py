@@ -8,8 +8,7 @@ class SqlWarehouseInfra():
 
         self.config = config
         self.w = WorkspaceClient()
-        self.default_sql_warehouse_name = self.config.get('SQL_WAREHOUSE_NAME')
-        self.warehouseID = self.config.get('SQL_WAREHOUSE_ID')
+        self.default_sql_warehouse_name = "sql_migration_assistant_warehouse"
 
 
     def choose_compute(self):
@@ -19,7 +18,8 @@ class SqlWarehouseInfra():
         warehouses = [f"CREATE A NEW SERVERLESS WAREHOUSE: {self.default_sql_warehouse_name}"]
         warehouses.extend(self.w.warehouses.list())
 
-        print("Choose a warehouse: please enter the number of the warehouse you would like to use.")
+        print("Choose a warehouse: please enter the number of the warehouse you would like to use.\n"
+              "This warehouse will be used for all migration assistant operations, setup and ongoing.")
         for i, warehouse in enumerate(warehouses):
             try:
                 print(f"{i}: Name: {warehouse.name},\tType: {warehouse.warehouse_type.name},"
@@ -42,5 +42,6 @@ class SqlWarehouseInfra():
             warehouseID = warehouses[choice].id
         # update config with user choice
         self.config['SQL_WAREHOUSE_ID'] = warehouseID
+        self.config['SQL_WAREHOUSE_NAME'] = self.default_sql_warehouse_name
 
 

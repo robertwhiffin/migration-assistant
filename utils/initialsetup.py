@@ -2,14 +2,14 @@ from infra.sql_warehouse_infra import SqlWarehouseInfra
 from infra.unity_catalog_infra import UnityCatalogInfra
 from infra.vector_search_infra import VectorSearchInfra
 from infra.chat_infra import ChatInfra
+from infra.secrets_infra import SecretsInfra
 import logging
 import yaml
 
 def setup_migration_assistant():
     logging.info("Setting up infrastructure")
-    # load config file
-    with open("template_config.yaml", 'r') as file:
-        config = yaml.safe_load(file)
+    # create empty config dict to fill in
+    config = {}
     logging.info("***Choose a Databricks SQL Warehouse***")
     sql_infra = SqlWarehouseInfra(config)
     sql_infra.choose_compute()
@@ -28,7 +28,9 @@ def setup_migration_assistant():
     logging.info("Setting up Chat infrastructure")
     chat_infra = ChatInfra(config)
     chat_infra.setup_foundation_model_infra()
-    return chat_infra.config
+    secrets_infra = SecretsInfra(config)
+    secrets_infra.create_secret_PAT()
+    return secrets_infra.config
 
 final_config = setup_migration_assistant()
 
