@@ -43,7 +43,7 @@ SCHEMA: 'sql-migration-assistant'
 # the http path from the connection details of a SQL Warehouse. This is retreived from the connection details of the SQL
 # warehouse page in the Databricks workspace.
 # eg "/sql/1.0/warehouses/d1184b8c2a8a87eb"
-SQL_WAREHOUSE_HTTP_PATH: FILL ME IN
+DEFAULT_SQL_WAREHOUSE_ID:
 DEFAULT_SQL_WAREHOUSE_NAME: "sql_migration_assistant_warehouse"
 ### CHATBOT PARAMETERS
 # The foundation model to use. This needs to be a chat model (e.g. one ending in -instruct).

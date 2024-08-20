@@ -1,9 +1,5 @@
 import logging
 
-from mlflow.tracking import MlflowClient
-
-import os
-
 from databricks.sdk import WorkspaceClient
 
 from utils.uc_model_version import get_latest_model_version
@@ -46,8 +42,9 @@ class ChatInfra():
         else:
             # check if PPT exists
             if self.pay_per_token_exists():
-                print("Would you like to use an existing pay per token endpoint? This is recommended for development and testing. "
-                      "The alternative is to create a Provisioned Throughput endpoint at greater cost. (y/n)")
+                print("Would you like to use an existing pay per token endpoint? This is recommended for quick testing."
+                      "The alternative is to create a Provisioned Throughput endpoint, which enables monitoring of"
+                      "the requests and responses made to the LLM via inference tables. (y/n)")
                 choice = str(input())
                 if choice.lower() == "y":
                     print("Choose a pay per token model:")

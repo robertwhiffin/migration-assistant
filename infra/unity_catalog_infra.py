@@ -1,9 +1,8 @@
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.errors import NotFound, PermissionDenied
-# from databricks.sdk.service.catalog import SecurableType
-import time
+
 import logging
-import os
+import time
+
 '''
 Approach
 
@@ -30,7 +29,7 @@ class UnityCatalogInfra():
 
         # user cannot change these values
         self.code_intent_table_name = self.config.get('CODE_INTENT_TABLE_NAME')
-        self.default_sql_warehouse_name = self.config.get('DEFAULT_SQL_WAREHOUSE_NAME')
+        self.warehouseID = self.config.get('DEFAULT_SQL_WAREHOUSE_ID')
 
     def choose_UC_catalog(self):
         '''Ask the user to choose an existing Unity Catalog or create a new one.
@@ -101,31 +100,8 @@ class UnityCatalogInfra():
 
         table_name = self.code_intent_table_name
 
-        # user choose compute to create table
-        warehouses = ["CREATE NEW SERVERLESS WAREHOUSE"]
-        warehouses.extend(self.w.warehouses.list())
-
-        print("Choose a warehouse. It is recommended to use an existing serverless warehouse:")
-        for i, warehouse in enumerate(warehouses):
-            try:
-                print(f"{i}: Name: {warehouse.name},\tType: {warehouse.warehouse_type.name},"
-                      f"\tState: {warehouse.state.name},\tServerless: {warehouse.enable_serverless_compute}")
-            except:
-                print(f"{i}: {warehouse}")
-        choice = int(input())
-        if choice == 0:
-            _ =self.w.warehouses.create_and_wait(
-                name=self.default_sql_warehouse_name,
-                cluster_size="2X-Small",
-                max_num_clusters=1,
-                auto_stop_mins=10
-            )
-            warehouseID = _.id
-        else:
-            warehouseID = warehouses[choice].id
-
         _ = self.w.statement_execution.execute_statement(
-            warehouse_id=warehouseID,
+            warehouse_id=self.warehouseID,
             catalog=self.migration_assistant_UC_catalog,
             schema=self.migration_assistant_UC_schema,
             statement= f"CREATE TABLE IF NOT EXISTS `{table_name}` (id BIGINT, code STRING, intent STRING) TBLPROPERTIES (delta.enableChangeDataFeed = true)"

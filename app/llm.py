@@ -1,44 +1,51 @@
-#from openai import OpenAI
-import os
-from langchain_community.chat_models import ChatDatabricks
+import logging
+
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.serving import ChatMessage, ChatMessageRole
+w = WorkspaceClient()
+foundation_llm_name = "databricks-meta-llama-3-1-405b-instruct"
+max_token = 4096
+messages=[
+    ChatMessage(role=ChatMessageRole.SYSTEM, content="You are an unhelpful assistant"),
+    ChatMessage(role=ChatMessageRole.USER, content="What is RAG?")
+]
+
+
 class LLMCalls():
-    def __init__(self, databricks_host, databricks_token, model_name, max_tokens):
-        # self.MODEL_SERVING_ENDPOINT_URL = f"https://{databricks_host}/serving-endpoints"
-        # self.client = OpenAI(
-        #     api_key=databricks_token,
-        #     base_url=self.MODEL_SERVING_ENDPOINT_URL
-        # )
-        # self.model_name = model_name
-        # self.max_tokens = int(max_tokens)
-        self.model = ChatDatabricks(endpoint=os.environ.get("LANGCHAIN_SERVING_ENDPOINT_NAME"))
+    def __init__(self, config):
+        self.config = config
+        self.w = WorkspaceClient()
+        self.foundation_llm_name = self.config.get("SERVED_FOUNDATION_MODEL_NAME")
+        self.max_tokens = int(config.get("MAX_TOKENS"))
 
 
     def call_llm(self, messages):
         """
         Function to call the LLM model and return the response.
-        :param messages: list of dictionaries with keys "role" and "content" with the role being one of "system", "user", or "assistant"
-        :param model: the model name to use
-        :param max_tokens: the maximum number of tokens to generate
+        :param messages: list of messages like
+            messages=[
+                       ChatMessage(role=ChatMessageRole.SYSTEM, content="You are an unhelpful assistant"),
+                        ChatMessage(role=ChatMessageRole.USER, content="What is RAG?"),
+                        ChatMessage(role=ChatMessageRole.ASSISTANT, content="A type of cloth?")
+                    ]
         :return: the response from the model
         """
-        return self.model.invoke(messages).content
-        # chat_completion = self.client.chat.completions.create(
-        #     messages=messages,
-        #     model=self.model_name,
-        #     max_tokens=self.max_tokens
-        # )
-        # return chat_completion.choices[0].message.content
-
-
+        response = self.w.serving_endpoints.query(
+            name=foundation_llm_name,
+            max_tokens=max_token,
+            messages=messages
+        )
+        message = response.choices[0].message.content
+        return message
 
     def convert_chat_to_llm_input(self, system_prompt, chat):
         # Convert the chat list of lists to the required format for the LLM
-        messages = [ {"role": "system", "content": system_prompt}]
+        messages = [ChatMessage(role=ChatMessageRole.SYSTEM, content=system_prompt)]
         for q, a in chat:
-            messages.extend(
-                [{"role": "user", "content": q}
-                    , {"role": "assistant", "content": a}]
-            )
+            messages.extend([
+                ChatMessage(role=ChatMessageRole.USER, content=q),
+                ChatMessage(role=ChatMessageRole.ASSISTANT, content=a)
+            ])
         return messages
 
 
@@ -50,8 +57,9 @@ class LLMCalls():
 
     def llm_translate(self, system_prompt, input_code):
         messages = [
-              {"role": "system", "content": system_prompt}
-            , {"role": "user", "content": input_code}]
+            ChatMessage(role=ChatMessageRole.SYSTEM, content=system_prompt),
+            ChatMessage(role=ChatMessageRole.USER, content=input_code)
+        ]
 
         # call the LLM end point.
         llm_answer = self.call_llm(
@@ -65,7 +73,7 @@ class LLMCalls():
 
     def llm_chat(self, system_prompt, query, chat_history):
         messages = self.convert_chat_to_llm_input(system_prompt, chat_history)
-        messages.append({"role": "user", "content": query})
+        messages.append(ChatMessage(role=ChatMessageRole.USER, content=query))
         # call the LLM end point.
         llm_answer = self.call_llm(
             messages=messages
@@ -74,8 +82,9 @@ class LLMCalls():
 
     def llm_intent(self, system_prompt, input_code):
         messages = [
-              {"role": "system", "content": system_prompt}
-            , {"role": "user", "content": input_code}]
+            ChatMessage(role=ChatMessageRole.SYSTEM, content=system_prompt),
+            ChatMessage(role=ChatMessageRole.USER, content=input_code)
+            ]
 
         # call the LLM end point.
         llm_answer = self.call_llm(
