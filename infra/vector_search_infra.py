@@ -3,15 +3,17 @@ from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntity
 from databricks.sdk.service.vectorsearch import EndpointType, DeltaSyncVectorIndexSpecRequest, PipelineType, EmbeddingSourceColumn, VectorIndexType
 from databricks.sdk.errors.platform import ResourceAlreadyExists
 
+from databricks.labs.blueprint.tui import Prompts
+
 import logging
 from utils.uc_model_version import get_latest_model_version
 
 
 class VectorSearchInfra():
-    def __init__(self, config):
-        self.w = WorkspaceClient()
-
+    def __init__(self, config, workspace_client: WorkspaceClient):
+        self.w = workspace_client
         self.config = config
+        self.prompts = Prompts()
 
         # set defaults for user to override if they choose
         self.default_VS_endpoint_name = "sql_migration_assistant_vs_endpoint"
@@ -41,23 +43,24 @@ class VectorSearchInfra():
         '''
         endpoints = [f"CREATE NEW VECTOR SEARCH ENDPOINT: {self.default_VS_endpoint_name}"]
         # Create a list of all endpoints in the workspace. Returns a generator
-        endpoints.extend(list(self.w.vector_search_endpoints.list_endpoints()))
+        _ = list(self.w.vector_search_endpoints.list_endpoints())
 
-        print("Choose a Vector Search endpoint:")
-        for i, endpoint in enumerate(endpoints):
-            try:
-                print(f"{i}: {endpoint.name} ({endpoint.num_indexes} indexes)")
-            except:
-                print(f"{i}: {endpoint}")
-        choice = int(input())
-        if choice == 0:
+        endpoints.extend(
+            [f"{endpoint.name} ({endpoint.num_indexes} indices)" for endpoint in _ ]
+        )
+
+        question = "Choose a Vector Search endpoint. Endpoints cannot have more than 50 indices."
+        choice = self.prompts.choice(question, endpoints)
+        # need only the endpoint name
+        choice = choice.split(" ")[0]
+        if "CREATE NEW VECTOR SEARCH ENDPOINT" in choice:
             self.migration_assistant_VS_endpoint = self.default_VS_endpoint_name
             logging.info(f"Creating new VS endpoint {self.migration_assistant_VS_endpoint}."
                          f"This will take a few minutes."
                          f"Check status here: {self.w.config.host}/compute/vector-search/{self.migration_assistant_VS_endpoint}")
             self._create_VS_endpoint()
         else:
-            self.migration_assistant_VS_endpoint = endpoints[choice].name
+            self.migration_assistant_VS_endpoint = choice
             # update config with user choice
             self.config['VECTOR_SEARCH_ENDPOINT_NAME'] = self.migration_assistant_VS_endpoint
 
@@ -65,23 +68,19 @@ class VectorSearchInfra():
         # list all serving endpoints with a task of embedding
         endpoints = [f"CREATE NEW EMBEDDING MODEL ENDPOINT {self.default_embedding_endpoint_name} USING"
                      f" {self.default_embedding_model_UC_path}"]
-
-        endpoints.extend(list(filter(lambda x: "embedding" in x.task if x.task else False,  self.w.serving_endpoints.list())))
-        print("Choose an embedding model endpoint:")
-        for i, endpoint in enumerate(endpoints):
-            try:
-                print(f"{i}: {endpoint.name}")
-            except:
-                print(f"{i}: {endpoint}")
-        choice = int(input())
-        if choice == 0:
+        _ = list(self.w.serving_endpoints.list())
+        _ = filter(lambda x: "embedding" in x.task if x.task else False,  _)
+        endpoints.extend([x.name for x in _])
+        question = "Choose an embedding model endpoint:"
+        choice = self.prompts.choice(question, endpoints)
+        if "CREATE NEW EMBEDDING MODEL ENDPOINT" in choice:
             self.migration_assistant_embedding_model_name = self.default_embedding_endpoint_name
             logging.info(f"Creating new model serving endpoint {self.migration_assistant_embedding_model_name}. "
                          f"This will take a few minutes."
                          f"Check status here: {self.w.config.host}/ml/endpoints/{self.migration_assistant_embedding_model_name}")
             self._create_embedding_model_endpoint()
         else:
-            self.migration_assistant_embedding_model_name = endpoints[choice].name
+            self.migration_assistant_embedding_model_name = choice
             # update config with user choice
             self.config['EMBEDDING_MODEL_ENDPOINT_NAME'] = self.migration_assistant_embedding_model_name
 

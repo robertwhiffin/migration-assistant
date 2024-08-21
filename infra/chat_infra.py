@@ -1,13 +1,15 @@
-import logging
-
 from databricks.sdk import WorkspaceClient
 
+from databricks.labs.blueprint.tui import Prompts
+
+import logging
 from utils.uc_model_version import get_latest_model_version
 
 class ChatInfra():
-    def __init__(self, config):
-        self.w = WorkspaceClient()
+    def __init__(self, config, workspace_client: WorkspaceClient):
+        self.w = workspace_client
         self.config = config
+        self.prompts = Prompts()
 
         # get values from config file
         self.migration_assistant_UC_catalog = self.config.get("CATALOG")
@@ -40,25 +42,21 @@ class ChatInfra():
         """
         # check if PPT exists
         if self._pay_per_token_exists():
-            print("Would you like to use an existing pay per token endpoint? This is recommended for quick testing. "
+            question = ("Would you like to use an existing pay per token endpoint? This is recommended for quick testing. "
                   "The alternative is to create a Provisioned Throughput endpoint, which enables monitoring of "
                   "the requests and responses made to the LLM via inference tables. (y/n)")
-            choice = str(input())
+            choice = self.prompts.question(question, validate=lambda x: x.lower() in ["y", "n"])
             if choice.lower() == "y":
-                print("Choose a pay per token model:")
-                for i, model in enumerate(self.pay_per_token_models):
-                    print(f"{i}: {model}")
-                choice = int(input())
-                self.foundation_llm_name = self.pay_per_token_models[choice]
+                question = "Choose a pay per token model:"
+                choice = self.prompts.choice(question, self.pay_per_token_models)
+                self.foundation_llm_name = choice
                 self.config['SERVED_FOUNDATION_MODEL_NAME'] = self.foundation_llm_name
                 return
         # create a provisioned throughput endpoint
-        print("Choose a foundation model to deploy:")
+        question = "Choose a foundation model from the system.ai schema to deploy:"
         system_models = self._list_models_from_system_ai()
-        for i, model in enumerate(system_models):
-            print(f"{i}: {model.name}")
-        choice = int(input())
-        self.foundation_llm_name = system_models[choice].name
+        choice = self.prompts.choice(question, system_models)
+        self.foundation_llm_name = choice
         logging.info(f"Deploying provisioned throughput endpoint {self.provisioned_throughput_endpoint_name} serving"
                      f" {self.foundation_llm_name}. This may take a few minutes.")
         self._create_provisioned_throughput_endpoint(self.foundation_llm_name)

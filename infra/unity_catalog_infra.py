@@ -15,8 +15,8 @@ upload app file to databricks
 
 '''
 class UnityCatalogInfra():
-    def __init__(self, config):
-        self.w = WorkspaceClient()
+    def __init__(self, config, workspace_client: WorkspaceClient):
+        self.w = workspace_client
         self.config = config
 
         # get defaults from config file
