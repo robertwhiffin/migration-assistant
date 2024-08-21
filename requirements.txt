@@ -1,11 +1,6 @@
-openai
 databricks-sdk
-databricks-sql-connector
 gradio==4.27.0
 pyyaml
-databricks-vectorsearch
 scipy
-langchain
-langchain-community
 mlflow[databricks]
-typer>=0.3.0
+databricks-labs-blueprint
